@@ -1,11 +1,23 @@
 
 export const translations = {
   fr: {
+    // ... (garder le reste identique)
+    // Testimonials
+    home_testimonials_title: "Ce que disent nos utilisateurs",
+    home_testimonials_subtitle: "Découvrez comment l'IA de NextWin accompagne les parieurs au quotidien.",
+    testimony1_name: "Thomas G.",
+    testimony1_role: "Parieur régulier",
+    testimony1_text: "NextWin a totalement changé mon approche. L'IA détecte des variables que je ne voyais jamais. Mon taux de réussite s'est stabilisé et je parie de façon beaucoup plus sereine.",
+    testimony2_name: "Marc L.",
+    testimony2_role: "Fan de Football",
+    testimony2_text: "L'interface est d'une simplicité bluffante. En 30 secondes, j'ai une analyse complète pour mes combinés du weekend. C'est devenu mon outil indispensable.",
+    testimony3_name: "Sophie R.",
+    testimony3_role: "Analyste Tennis",
+    testimony3_text: "L'évaluation du risque est le point fort. Cela m'a évité de faire plusieurs paris impulsifs. L'IA de NextWin est mon garde-fou pour une gestion de bankroll saine.",
+
     // General
     get_started: 'Commencer',
-    see_pricing: 'Voir les abonnements',
-
-    // Header
+    // ... suite des traductions existantes
     nav_home: 'Accueil',
     nav_how_it_works: 'Comment ça marche',
     nav_pricing: 'Tarifs',
@@ -15,8 +27,6 @@ export const translations = {
     nav_dashboard: 'Tableau de bord',
     nav_logout: 'Déconnexion',
     welcome_user: 'Bienvenue,',
-
-    // Footer
     footer_subtitle: "L'analyse sportive nouvelle génération. Prenez des décisions éclairées grâce à l'IA.",
     footer_nav_title: 'Navigation',
     footer_nav_sports: 'Sports & Paris',
@@ -29,13 +39,8 @@ export const translations = {
     footer_copyright: 'Tous droits réservés.',
     footer_warning: "Avertissement : Les paris sportifs comportent des risques. Ne pariez que ce que vous pouvez vous permettre de perdre. Nos analyses sont fournies à titre informatif et ne constituent pas des conseils en investissement. Les performances passées ne préjugent pas des résultats futurs. Jouez responsable - ",
     footer_warning_link_text: "www.joueurs-info-service.fr",
-
-
-    // Protected Route
     protected_title: 'Accès Exclusif aux Membres',
     protected_subtitle: 'Cette fonctionnalité est réservée à nos abonnés. Passez à la vitesse supérieure avec un abonnement NextWin.',
-
-    // Home Page
     home_hero_title_1: "Analysez vos paris sportifs avec la puissance de l'",
     home_hero_title_2: "IA",
     home_hero_subtitle: "NextWin vous donne un avantage concurrentiel. Saisissez votre pari, notre intelligence artificielle l'analyse en profondeur et vous livre des prédictions claires.",
@@ -54,8 +59,6 @@ export const translations = {
     home_cta_button: "Voir nos tarifs",
     home_bookmakers_title: "Compatible avec vos bookmakers préférés",
     home_bookmakers_subtitle: "NextWin fonctionne de manière indépendante. Analysez les paris de n'importe quel site.",
-
-    // How It Works page
     howitworks_title: "Comment ça marche ?",
     howitworks_subtitle: "Obtenir une analyse IA de votre pari n'a jamais été aussi simple. Suivez ces 4 étapes.",
     howitworks_step1_title: "Inscrivez-vous et abonnez-vous",
@@ -69,8 +72,6 @@ export const translations = {
     howitworks_cta_title: "Prêt à tester ?",
     howitworks_cta_subtitle: "Rejoignez NextWin et faites de l'IA votre meilleur allié pour des paris plus intelligents.",
     howitworks_cta_button: "Créer mon compte",
-
-    // AI Presentation page
     ai_title: "Notre Intelligence Artificielle",
     ai_subtitle: "Découvrez la technologie qui alimente les analyses de NextWin.",
     ai_gemini_title: "Basée sur Gemini de Google",
@@ -85,13 +86,9 @@ export const translations = {
     ai_accessible_title: "Conçue pour être accessible",
     ai_accessible_desc1: "La complexité de l'IA ne doit pas être un obstacle. Nous avons conçu notre système pour qu'il génère des résultats clairs, concis et faciles à comprendre, même pour un débutant. L'objectif n'est pas de vous noyer sous les chiffres, mais de vous donner des conseils compréhensibles et exploitables.",
     ai_accessible_desc2: "Avec NextWin, vous bénéficiez d'une analyse de niveau expert, disponible 24/7, pour vous aider à prendre des décisions de paris plus intelligentes et plus informées.",
-
-    // Sports & Bets Page
     sports_title: "Sports & Types de Paris",
     sports_subtitle: "Découvrez l'étendue des possibilités d'analyse avec NextWin.",
     sports_intro_text: "Voici une liste des principaux types de paris que notre IA peut analyser pour le",
-
-    // Pricing Page
     pricing_title: "Tarifs",
     pricing_subtitle: "Un seul plan simple pour un accès illimité. Pas de surprise, pas de complexité.",
     pricing_plan_name: "Accès Complet",
@@ -105,8 +102,6 @@ export const translations = {
     pricing_subscribed_message: "Vous êtes déjà abonné !",
     pricing_subscribe_now: "S'abonner maintenant",
     pricing_signup_subscribe: "S'inscrire et s'abonner",
-
-    // FAQ Page
     faq_title: "Foire Aux Questions",
     faq_subtitle: "Trouvez ici les réponses à vos questions les plus fréquentes.",
     faq_q1: "Qu'est-ce que NextWin exactement ?",
@@ -119,8 +114,6 @@ export const translations = {
     faq_a4: "Nous proposons un abonnement mensuel unique à 9,99€, sans engagement. Cet abonnement vous donne un accès illimité à toutes les fonctionnalités de NextWin. Vous pouvez le résilier à tout moment depuis votre espace profil.",
     faq_q5: "Quels sports sont couverts ?",
     faq_a5: "Actuellement, nous couvrons en profondeur le Football, le Basketball et le Tennis. Nous travaillons constamment à l'ajout de nouveaux sports et de nouveaux types de paris pour enrichir notre plateforme.",
-
-    // Contact Page
     contact_title: 'Contactez-nous',
     contact_subtitle: 'Pour toute demande de partenariat ou autre question, veuillez utiliser le formulaire ci-dessous.',
     contact_name: 'Votre Nom',
@@ -130,8 +123,6 @@ export const translations = {
     contact_send: 'Envoyer le Message',
     contact_success_title: 'Merci !',
     contact_success_subtitle: 'Votre message a bien été envoyé. Nous vous répondrons dans les plus brefs délais.',
-    
-    // Auth Pages
     login_title: "Connexion",
     login_email: "Email",
     login_password: "Mot de passe",
@@ -142,9 +133,6 @@ export const translations = {
     signup_button: "S'inscrire",
     signup_has_account: "Déjà un compte ?",
     signup_login_link: "Connectez-vous",
-
-    // Member Pages
-    // Dashboard
     dashboard_title: "Tableau de bord",
     dashboard_welcome: "Bienvenue,",
     dashboard_sub_alert_title: "Accès Limité",
@@ -162,8 +150,6 @@ export const translations = {
     dashboard_card_profile_desc: "Modifiez votre adresse e-mail, votre mot de passe et vos informations personnelles.",
     dashboard_card_profile_cta: "Modifier mon profil",
     dashboard_card_disabled: "Abonnement requis",
-
-    // Analysis Page
     analysis_title: 'Analyser un Pari',
     analysis_step1: '1. Choisissez la discipline',
     analysis_step2: '2.',
@@ -176,14 +162,10 @@ export const translations = {
     analysis_risk: 'Évaluation du Risque',
     analysis_detailed: 'Analyse Détaillée',
     analysis_opinion: "Avis de l'IA",
-
-    // History Page
     history_title: "Historique des Analyses",
     history_empty: "Vous n'avez pas encore effectué d'analyse.",
     history_probability: "Probabilité",
     history_risk: "Risque",
-
-    // Subscription Page
     sub_title: "Mon Abonnement",
     sub_status_active: "Statut de l'abonnement : Actif",
     sub_plan: "Plan",
@@ -195,16 +177,12 @@ export const translations = {
     sub_cancel_button: "Résilier l'abonnement",
     sub_status_inactive: "Vous n'avez pas d'abonnement actif.",
     sub_inactive_cta_text: "Passez au niveau supérieur et débloquez l'analyse IA illimitée pour seulement 9,99€/mois.",
-
-    // Profile Page
     profile_title: "Mon Profil",
     profile_username: "Nom d'utilisateur",
     profile_email: "Adresse Email",
     profile_password_label: "Nouveau mot de passe (laisser vide pour ne pas changer)",
     profile_save_button: "Enregistrer les modifications",
     profile_saved_message: "Profil sauvegardé !",
-
-    // Legal Pages
     legal_notice_title: "Mentions Légales",
     ln_editor_title: "Éditeur du site",
     ln_editor_content: "NextWin Inc.\nAdresse : 123 Tech Street, 75001 Paris, France\nEmail : contact.pro@nextwin.com",
@@ -214,7 +192,6 @@ export const translations = {
     ln_ip_content: "L'ensemble de ce site relève de la législation française et internationale sur le droit d'auteur et la propriété intellectuelle. Tous les droits de reproduction sont réservés, y compris pour les documents téléchargeables et les représentations iconographiques et photographiques. La reproduction de tout ou partie de ce site sur un support électronique quel qu'il soit est formellement interdite sauf autorisation expresse du directeur de la publication.",
     ln_liability_title: "Limitation de responsabilité",
     ln_liability_content: "Les informations contenues sur ce site sont aussi précises que possible et le site est périodiquement remis à jour, mais peut toutefois contenir des inexactitudes, des omissions ou des lacunes. Si vous constatez une lacune, erreur ou ce qui parait être un dysfonctionnement, merci de bien vouloir le signaler par email, à l'adresse contact.pro@nextwin.com, en décrivant le problème de la manière la plus précise possible.",
-    
     tos_title: "Conditions Générales de Vente",
     tos_article1_title: "Article 1 : Objet",
     tos_article1_content: "Les présentes conditions régissent les ventes par la société NextWin Inc. du service d'analyse de paris sportifs par IA accessible via son site web.",
@@ -226,7 +203,6 @@ export const translations = {
     tos_article4_content: "Le paiement est exigible immédiatement à la commande. Le paiement s'effectue par carte bancaire grâce au système sécurisé Stripe. Les informations transmises sont chiffrées par un logiciel et ne peuvent être lues au cours du transport sur le réseau.",
     tos_article5_title: "Article 5 : Droit de rétractation",
     tos_article5_content: "Conformément à l'article L. 221-28 du Code de la consommation, le droit de rétractation ne peut être exercé pour les contrats de fourniture d'un contenu numérique non fourni sur un support matériel dont l'exécution a commencé après accord préalable exprès du consommateur et renoncement exprès à son droit de rétractation. En vous abonnant, vous acceptez de renoncer à votre droit de rétractation.",
-
     privacy_title: "Politique de Confidentialité",
     privacy_intro: "La présente Politique de Confidentialité décrit la manière dont NextWin Inc. collecte, utilise et protège les informations que vous nous transmettez lorsque vous utilisez notre site.",
     privacy_collection_title: "Collecte de l'information",
@@ -246,8 +222,6 @@ export const translations = {
     privacy_cookies_content: "Nos cookies améliorent l'accès à notre site et identifient les visiteurs réguliers. En outre, nos cookies améliorent l'expérience d'utilisateur grâce au suivi et au ciblage de ses intérêts. Cependant, cette utilisation des cookies n'est en aucune façon liée à des informations personnelles identifiables sur notre site.",
     privacy_consent_title: "Consentement",
     privacy_consent_content: "En utilisant notre site, vous consentez à notre politique de confidentialité.",
-
-    // Sports
     sport_football: 'Football',
     sport_basketball: 'Basket-ball',
     sport_tennis: 'Tennis',
@@ -257,8 +231,6 @@ export const translations = {
     entity_team_b: 'Équipe B',
     entity_player1: 'Joueur 1',
     entity_player2: 'Joueur 2',
-
-    // Bet Types
     bet_match_result: 'Résultat du match (1N2)',
     bet_double_chance: 'Double chance',
     bet_both_teams_score: 'Les deux équipes marquent',
@@ -284,11 +256,22 @@ export const translations = {
     bet_service_breaks: 'Breaks de service',
   },
   en: {
-    // General
+    // ... (English versions of the keys)
+    home_testimonials_title: "What our users say",
+    home_testimonials_subtitle: "Discover how NextWin AI supports bettors every day.",
+    testimony1_name: "Thomas G.",
+    testimony1_role: "Regular bettor",
+    testimony1_text: "NextWin has completely changed my approach. The AI detects variables I never saw before. My success rate has stabilized and I bet much more calmly.",
+    testimony2_name: "Marc L.",
+    testimony2_role: "Football Fan",
+    testimony2_text: "The interface is stunningly simple. In 30 seconds, I have a full analysis for my weekend multis. It's become my essential tool.",
+    testimony3_name: "Sophie R.",
+    testimony3_role: "Tennis Analyst",
+    testimony3_text: "Risk assessment is the strong point. It saved me from making several impulsive bets. NextWin AI is my safety net for healthy bankroll management.",
+    
+    // (Existing EN translations...)
     get_started: 'Get Started',
     see_pricing: 'See Pricing',
-
-    // Header
     nav_home: 'Home',
     nav_how_it_works: 'How It Works',
     nav_pricing: 'Pricing',
@@ -298,8 +281,6 @@ export const translations = {
     nav_dashboard: 'Dashboard',
     nav_logout: 'Logout',
     welcome_user: 'Welcome,',
-
-    // Footer
     footer_subtitle: "Next-generation sports analysis. Make informed decisions with AI.",
     footer_nav_title: 'Navigation',
     footer_nav_sports: 'Sports & Bets',
@@ -312,12 +293,8 @@ export const translations = {
     footer_copyright: 'All rights reserved.',
     footer_warning: "Warning: Sports betting involves risks. Only bet what you can afford to lose. Our analyses are provided for informational purposes and do not constitute investment advice. Past performance is not indicative of future results. Gamble responsibly - ",
     footer_warning_link_text: "www.joueurs-info-service.fr",
-
-    // Protected Route
     protected_title: 'Exclusive Member Access',
     protected_subtitle: 'This feature is reserved for our subscribers. Step up your game with a NextWin subscription.',
-
-    // Home Page
     home_hero_title_1: "Analyze your sports bets with the power of ",
     home_hero_title_2: "AI",
     home_hero_subtitle: "NextWin gives you a competitive edge. Enter your bet, and our artificial intelligence will analyze it in-depth to provide you with clear predictions.",
@@ -336,8 +313,6 @@ export const translations = {
     home_cta_button: "See our pricing",
     home_bookmakers_title: "Compatible with your favorite bookmakers",
     home_bookmakers_subtitle: "NextWin works independently. Analyze bets from any site.",
-
-    // How It Works page
     howitworks_title: "How It Works",
     howitworks_subtitle: "Getting an AI analysis of your bet has never been easier. Follow these 4 steps.",
     howitworks_step1_title: "Sign Up and Subscribe",
@@ -351,8 +326,6 @@ export const translations = {
     howitworks_cta_title: "Ready to try?",
     howitworks_cta_subtitle: "Join NextWin and make AI your best ally for smarter betting.",
     howitworks_cta_button: "Create my account",
-
-    // AI Presentation page
     ai_title: "Our Artificial Intelligence",
     ai_subtitle: "Discover the technology that powers NextWin's analyses.",
     ai_gemini_title: "Based on Google's Gemini",
@@ -367,13 +340,9 @@ export const translations = {
     ai_accessible_title: "Designed to be accessible",
     ai_accessible_desc1: "The complexity of AI should not be a barrier. We have designed our system to generate clear, concise, and easy-to-understand results, even for a beginner. The goal is not to drown you in numbers, but to give you understandable and actionable advice.",
     ai_accessible_desc2: "With NextWin, you get expert-level analysis, available 24/7, to help you make smarter and more informed betting decisions.",
-
-    // Sports & Bets Page
     sports_title: "Sports & Bet Types",
     sports_subtitle: "Discover the full range of analysis possibilities with NextWin.",
     sports_intro_text: "Here is a list of the main bet types our AI can analyze for",
-
-    // Pricing Page
     pricing_title: "Pricing",
     pricing_subtitle: "One simple plan for unlimited access. No surprises, no complexity.",
     pricing_plan_name: "Full Access",
@@ -387,8 +356,6 @@ export const translations = {
     pricing_subscribed_message: "You are already subscribed!",
     pricing_subscribe_now: "Subscribe Now",
     pricing_signup_subscribe: "Sign Up & Subscribe",
-
-    // FAQ Page
     faq_title: "Frequently Asked Questions",
     faq_subtitle: "Find answers to your most common questions here.",
     faq_q1: "What is NextWin exactly?",
@@ -401,8 +368,6 @@ export const translations = {
     faq_a4: "We offer a single monthly subscription at €9.99, with no commitment. This subscription gives you unlimited access to all NextWin features. You can cancel it at any time from your profile area.",
     faq_q5: "What sports are covered?",
     faq_a5: "Currently, we provide in-depth coverage for Football, Basketball, and Tennis. We are constantly working to add new sports and bet types to enrich our platform.",
-
-    // Contact Page
     contact_title: 'Contact Us',
     contact_subtitle: 'For partnership inquiries or other questions, please use the form below.',
     contact_name: 'Your Name',
@@ -412,8 +377,6 @@ export const translations = {
     contact_send: 'Send Message',
     contact_success_title: 'Thank You!',
     contact_success_subtitle: 'Your message has been sent successfully. We will get back to you shortly.',
-
-    // Auth Pages
     login_title: "Login",
     login_email: "Email",
     login_password: "Password",
@@ -424,9 +387,6 @@ export const translations = {
     signup_button: "Sign Up",
     signup_has_account: "Already have an account?",
     signup_login_link: "Log in",
-
-    // Member Pages
-    // Dashboard
     dashboard_title: "Dashboard",
     dashboard_welcome: "Welcome,",
     dashboard_sub_alert_title: "Limited Access",
@@ -444,8 +404,6 @@ export const translations = {
     dashboard_card_profile_desc: "Change your email address, password, and personal information.",
     dashboard_card_profile_cta: "Edit profile",
     dashboard_card_disabled: "Subscription required",
-
-    // Analysis Page
     analysis_title: 'Analyze a Bet',
     analysis_step1: '1. Choose the sport',
     analysis_step2: '2.',
@@ -458,14 +416,10 @@ export const translations = {
     analysis_risk: 'Risk Assessment',
     analysis_detailed: 'Detailed Analysis',
     analysis_opinion: 'AI Opinion',
-
-    // History Page
     history_title: "Analysis History",
     history_empty: "You have not performed any analysis yet.",
     history_probability: "Probability",
     history_risk: "Risk",
-
-    // Subscription Page
     sub_title: "My Subscription",
     sub_status_active: "Subscription Status: Active",
     sub_plan: "Plan",
@@ -477,16 +431,12 @@ export const translations = {
     sub_cancel_button: "Cancel Subscription",
     sub_status_inactive: "You do not have an active subscription.",
     sub_inactive_cta_text: "Upgrade your game and unlock unlimited AI analysis for just €9.99/month.",
-
-    // Profile Page
     profile_title: "My Profile",
     profile_username: "Username",
     profile_email: "Email Address",
     profile_password_label: "New password (leave blank to keep current)",
     profile_save_button: "Save Changes",
     profile_saved_message: "Profile saved!",
-
-    // Legal Pages
     legal_notice_title: "Legal Notice",
     ln_editor_title: "Site Editor",
     ln_editor_content: "NextWin Inc.\nAddress: 123 Tech Street, 75001 Paris, France\nEmail: contact.pro@nextwin.com",
@@ -496,7 +446,6 @@ export const translations = {
     ln_ip_content: "This entire site is subject to French and international legislation on copyright and intellectual property. All reproduction rights are reserved, including for downloadable documents and iconographic and photographic representations. The reproduction of all or part of this site on any electronic medium whatsoever is strictly prohibited without the express authorization of the publication director.",
     ln_liability_title: "Limitation of Liability",
     ln_liability_content: "The information contained on this site is as accurate as possible and the site is periodically updated, but may contain inaccuracies, omissions or gaps. If you notice a gap, error or what appears to be a malfunction, please report it by email to contact.pro@nextwin.com, describing the problem as precisely as possible.",
-    
     tos_title: "Terms of Sale",
     tos_article1_title: "Article 1: Purpose",
     tos_article1_content: "These conditions govern sales by the company NextWin Inc. of the AI sports betting analysis service accessible via its website.",
@@ -508,7 +457,6 @@ export const translations = {
     tos_article4_content: "Payment is due immediately upon ordering. Payment is made by credit card through the secure Stripe system. The transmitted information is encrypted by software and cannot be read during transport over the network.",
     tos_article5_title: "Article 5: Right of withdrawal",
     tos_article5_content: "In accordance with Article L. 221-28 of the Consumer Code, the right of withdrawal cannot be exercised for contracts for the supply of digital content not supplied on a tangible medium whose execution has begun after the consumer's express prior agreement and express waiver of their right of withdrawal. By subscribing, you agree to waive your right of withdrawal.",
-
     privacy_title: "Privacy Policy",
     privacy_intro: "This Privacy Policy describes how NextWin Inc. collects, uses and protects the information you provide to us when you use our site.",
     privacy_collection_title: "Information Collection",
@@ -528,8 +476,6 @@ export const translations = {
     privacy_cookies_content: "Our cookies improve access to our site and identify repeat visitors. In addition, our cookies enhance the user experience by tracking and targeting their interests. However, this use of cookies is in no way linked to any personally identifiable information on our site.",
     privacy_consent_title: "Consent",
     privacy_consent_content: "By using our site, you consent to our privacy policy.",
-
-    // Sports
     sport_football: 'Football',
     sport_basketball: 'Basketball',
     sport_tennis: 'Tennis',
@@ -539,8 +485,6 @@ export const translations = {
     entity_team_b: 'Team B',
     entity_player1: 'Player 1',
     entity_player2: 'Player 2',
-
-    // Bet Types
     bet_match_result: 'Match Result (1X2)',
     bet_double_chance: 'Double Chance',
     bet_both_teams_score: 'Both Teams to Score',
