@@ -1,0 +1,5 @@
+{
+  "name": "NextWin - AI Sports Bet Analysis",
+  "description": "NextWin is a professional web application that uses AI to analyze sports bets. Users manually input bet details, and our advanced AI provides detailed analysis, success probabilities, and risk assessment. Access is available through a monthly subscription.",
+  "requestFramePermissions": []
+}
