@@ -1,5 +1,5 @@
 {
-  "name": "NextWin - AI Sports Bet Analysis",
-  "description": "NextWin is a professional web application that uses AI to analyze sports bets. Users manually input bet details, and our advanced AI provides detailed analysis, success probabilities, and risk assessment. Access is available through a monthly subscription.",
+  "name": "NextWin - Des analyses IA pour optimiser vos paris sportifs",
+  "description": "NextWin est une plateforme professionnelle utilisant l'intelligence artificielle pour optimiser vos paris sportifs via des analyses approfondies et des pronostics quotidiens exclusifs.",
   "requestFramePermissions": []
 }

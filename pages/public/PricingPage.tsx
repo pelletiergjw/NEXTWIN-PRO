@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,47 +21,65 @@ const PricingPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto text-center">
-      <h1 className="text-5xl font-bold text-white mb-6">{t('pricing_title')}</h1>
-      <p className="text-xl text-gray-300 mb-16">
+    <div className="max-w-4xl mx-auto text-center py-12 px-4">
+      <h1 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tight">{t('pricing_title')}</h1>
+      <p className="text-xl text-gray-400 mb-16 max-w-2xl mx-auto leading-relaxed">
         {t('pricing_subtitle')}
       </p>
 
-      <Card className="max-w-md mx-auto transform hover:scale-105 transition-transform duration-300 border-2 border-orange-500">
-        <h2 className="text-2xl font-bold text-white mb-2">{t('pricing_plan_name')}</h2>
-        <p className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500 my-4">
-          {t('pricing_price')}
-        </p>
-        <p className="text-gray-400 font-semibold mb-6">{t('pricing_per_month')}</p>
-
-        <ul className="text-left space-y-4 text-gray-300 my-8">
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>{t('pricing_feature1')}
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>{t('pricing_feature2')}
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>{t('pricing_feature3')}
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>{t('pricing_feature4')}
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>{t('pricing_feature5')}
-          </li>
-        </ul>
+      <div className="relative group max-w-md mx-auto">
+        {/* Glow effect behind card */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
         
-        {isSubscribed ? (
-            <div className="mt-8 p-3 bg-green-900 text-green-300 border border-green-700 rounded-lg">
-                {t('pricing_subscribed_message')}
-            </div>
-        ) : (
-             <Button onClick={handleSubscribe} className="w-full text-lg py-3 mt-8">
-                {isAuthenticated ? t('pricing_subscribe_now') : t('pricing_signup_subscribe')}
-            </Button>
-        )}
-      </Card>
+        <Card className="relative transform transition-all duration-300 border-2 border-orange-500/30 hover:border-orange-500 bg-[#1C1C2B] p-8 md:p-12 shadow-2xl">
+          <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">{t('pricing_plan_name')}</h2>
+          
+          <div className="my-10 flex flex-col items-center">
+            <span className="text-7xl font-black text-white leading-none">{t('pricing_price')}</span>
+            <span className="text-gray-400 mt-3 text-lg font-medium opacity-80">{t('pricing_per_month')}</span>
+            <span className="text-orange-500/70 text-[10px] uppercase font-black tracking-widest mt-2">{t('pricing_no_commitment')}</span>
+          </div>
+
+          <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 mb-8">
+            <p className="text-orange-400 font-bold text-sm">
+              ✨ {t('pricing_feature1')}
+            </p>
+          </div>
+
+          <ul className="text-left space-y-4 text-gray-300 mb-10">
+            <li className="flex items-start gap-3">
+              <span className="text-green-500 font-bold text-xl leading-none">✓</span>
+              <span className="text-sm font-medium">{t('pricing_feature2')}</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-green-500 font-bold text-xl leading-none">✓</span>
+              <span className="text-sm font-medium">{t('pricing_feature3')}</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-green-500 font-bold text-xl leading-none">✓</span>
+              <span className="text-sm font-medium">{t('pricing_feature4')}</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-green-500 font-bold text-xl leading-none">✓</span>
+              <span className="text-sm font-medium">{t('pricing_feature5')}</span>
+            </li>
+          </ul>
+          
+          {isSubscribed ? (
+              <div className="mt-8 p-4 bg-green-500/10 text-green-400 border border-green-500/20 rounded-xl font-bold uppercase text-xs tracking-widest">
+                  {t('pricing_subscribed_message')}
+              </div>
+          ) : (
+               <Button onClick={handleSubscribe} className="w-full text-xl py-5 shadow-xl shadow-orange-500/40 font-black">
+                  {isAuthenticated ? t('pricing_subscribe_now') : t('pricing_signup_subscribe')}
+              </Button>
+          )}
+          
+          <p className="mt-8 text-[10px] text-gray-500 uppercase font-bold tracking-tighter opacity-60">
+            Paiement sécurisé via Stripe • Résiliation en 1 clic
+          </p>
+        </Card>
+      </div>
     </div>
   );
 };

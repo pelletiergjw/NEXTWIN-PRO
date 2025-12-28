@@ -29,6 +29,14 @@ const DashboardPage: React.FC = () => {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <DashboardCard 
+          title={t('dashboard_card_picks_title')}
+          description={t('dashboard_card_picks_desc')}
+          link="/daily-picks"
+          linkText={t('dashboard_card_picks_cta')}
+          disabled={!isSubscribed}
+          highlight
+        />
+        <DashboardCard 
           title={t('dashboard_card_analysis_title')}
           description={t('dashboard_card_analysis_desc')}
           link="/analysis"
@@ -65,21 +73,25 @@ interface DashboardCardProps {
     link: string;
     linkText: string;
     disabled?: boolean;
+    highlight?: boolean;
 }
 
-const DashboardCard: React.FC<DashboardCardProps> = ({ title, description, link, linkText, disabled = false }) => {
+const DashboardCard: React.FC<DashboardCardProps> = ({ title, description, link, linkText, disabled = false, highlight = false }) => {
     const { t } = useLanguage();
     return (
-        <Card className={`flex flex-col justify-between h-full ${disabled ? 'opacity-50' : ''}`}>
+        <Card className={`flex flex-col justify-between h-full transition-all duration-300 ${disabled ? 'opacity-50' : 'hover:border-orange-500/50'} ${highlight ? 'border-orange-500 ring-1 ring-orange-500/20' : ''}`}>
             <div>
-                <h3 className="text-2xl font-bold text-white mb-3">{title}</h3>
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-2xl font-bold text-white">{title}</h3>
+                    {highlight && <span className="bg-orange-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">Premium</span>}
+                </div>
                 <p className="text-gray-400 mb-6">{description}</p>
             </div>
             {disabled ? (
                 <Button disabled className="w-full mt-auto cursor-not-allowed">{t('dashboard_card_disabled')}</Button>
             ) : (
                 <Link to={link}>
-                    <Button className="w-full mt-auto">{linkText}</Button>
+                    <Button className={`w-full mt-auto ${highlight ? 'shadow-lg shadow-orange-500/20' : ''}`}>{linkText}</Button>
                 </Link>
             )}
         </Card>

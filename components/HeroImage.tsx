@@ -3,44 +3,69 @@ import React from 'react';
 
 const HeroImage: React.FC = () => {
   return (
-    <div className="relative">
-      <svg viewBox="0 0 800 300" className="w-full h-auto">
+    <div className="relative w-full max-w-2xl mx-auto py-16 flex justify-center items-center">
+      {/* Glow de fond subtil */}
+      <div className="absolute inset-0 bg-gradient-radial from-orange-500/5 via-transparent to-transparent blur-3xl pointer-events-none"></div>
+
+      <svg viewBox="0 0 500 200" className="w-full h-auto overflow-visible">
         <defs>
-          <linearGradient id="hero-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="main-grad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#F97316" />
-            <stop offset="100%" stopColor="#EC4899" />
+            <stop offset="50%" stopColor="#EC4899" />
+            <stop offset="100%" stopColor="#8B5CF6" />
           </linearGradient>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="5" result="coloredBlur" />
+          
+          <filter id="neon-glow">
+            <feGaussianBlur stdDeviation="5" result="blur" />
             <feMerge>
-              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+
+          <style>
+            {`
+              @keyframes hover-effect {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+              }
+              .sport-item { animation: hover-effect 4s ease-in-out infinite; transform-origin: center; }
+              .delay-1 { animation-delay: -1s; }
+              .delay-2 { animation-delay: -2s; }
+            `}
+          </style>
         </defs>
-        
-        {/* Abstract background shapes */}
-        <path d="M0 150 Q 200 50, 400 150 T 800 150" stroke="url(#hero-grad)" strokeWidth="2" fill="none" opacity="0.3" filter="url(#glow)" />
-        <path d="M0 200 Q 200 250, 400 200 T 800 200" stroke="#8B5CF6" strokeWidth="1.5" fill="none" opacity="0.2" />
 
-        {/* Central element - representing analysis */}
-        <g transform="translate(400, 150)">
-          <circle cx="0" cy="0" r="40" fill="none" stroke="url(#hero-grad)" strokeWidth="2" />
-          <path d="M -20 -15 L 20 15 M -20 15 L 20 -15" stroke="#fff" strokeWidth="1" opacity="0.5" />
-          <text x="0" y="5" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="bold">AI</text>
+        {/* Ligne de connexion élégante */}
+        <path d="M50,100 L450,100" stroke="url(#main-grad)" strokeWidth="1" strokeDasharray="5,10" opacity="0.2" />
+
+        {/* Football */}
+        <g className="sport-item">
+          <circle cx="100" cy="100" r="45" fill="#1C1C2B" stroke="url(#main-grad)" strokeWidth="2" filter="url(#neon-glow)" />
+          <text x="100" y="110" fontSize="40" textAnchor="middle">⚽</text>
+          <text x="100" y="170" fontSize="10" fill="gray" textAnchor="middle" fontWeight="bold" letterSpacing="2">FOOTBALL</text>
         </g>
-        
-        {/* Graph-like lines */}
-        <polyline points="50,250 150,180 250,220 350,150" fill="none" stroke="#fff" strokeWidth="1" opacity="0.4" strokeDasharray="5 5" />
-        <polyline points="450,150 550,220 650,180 750,250" fill="none" stroke="#fff" strokeWidth="1" opacity="0.4" strokeDasharray="5 5" />
 
-        {/* Sports icons */}
-        <text x="100" y="100" fontSize="30" fill="white" opacity="0.2">⚽</text>
-        <text x="700" y="100" fontSize="30" fill="white" opacity="0.2">🏀</text>
-        <text x="250" y="70" fontSize="30" fill="white" opacity="0.2">🎾</text>
+        {/* Basketball */}
+        <g className="sport-item delay-1">
+          <circle cx="250" cy="100" r="45" fill="#1C1C2B" stroke="url(#main-grad)" strokeWidth="2" filter="url(#neon-glow)" />
+          <text x="250" y="110" fontSize="40" textAnchor="middle">🏀</text>
+          <text x="250" y="170" fontSize="10" fill="gray" textAnchor="middle" fontWeight="bold" letterSpacing="2">BASKETBALL</text>
+        </g>
 
+        {/* Tennis */}
+        <g className="sport-item delay-2">
+          <circle cx="400" cy="100" r="45" fill="#1C1C2B" stroke="url(#main-grad)" strokeWidth="2" filter="url(#neon-glow)" />
+          <text x="400" y="110" fontSize="40" textAnchor="middle">🎾</text>
+          <text x="400" y="170" fontSize="10" fill="gray" textAnchor="middle" fontWeight="bold" letterSpacing="2">TENNIS</text>
+        </g>
       </svg>
-      <div className="absolute inset-0 bg-gradient-to-t from-[#10101A] via-transparent to-transparent"></div>
+      
+      {/* Mini badge d'état */}
+      <div className="absolute -bottom-2 bg-green-500/10 border border-green-500/30 px-3 py-1 rounded-full flex items-center gap-2">
+          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+          <span className="text-[10px] text-green-400 font-black uppercase tracking-widest">IA Active : 24/7 Live Monitoring</span>
+      </div>
     </div>
   );
 };
