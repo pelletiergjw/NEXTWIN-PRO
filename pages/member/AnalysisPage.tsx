@@ -5,13 +5,14 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Spinner from '../../components/ui/Spinner';
+import ProbabilityGauge from '../../components/ui/ProbabilityGauge';
 import { SPORTS } from '../../constants';
 import { getBetAnalysis } from '../../services/geminiService';
 import type { AnalysisRequest, AnalysisResult, Sport, BetType } from '../../types';
 import { useLanguage } from '../../hooks/useLanguage';
 
 const AnalysisPage: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [selectedSport, setSelectedSport] = useState<Sport | undefined>(SPORTS[0]);
   const [selectedBetType, setSelectedBetType] = useState<BetType | undefined>(SPORTS[0].betTypes[0]);
   const [entity1, setEntity1] = useState('');
@@ -51,7 +52,7 @@ const AnalysisPage: React.FC = () => {
       betType: t(selectedBetType.labelKey as any),
     };
 
-    const result = await getBetAnalysis(request);
+    const result = await getBetAnalysis(request, language);
     
     const newAnalysis: AnalysisResult = {
         id: new Date().toISOString(),
@@ -74,6 +75,8 @@ const AnalysisPage: React.FC = () => {
     Medium: 'text-yellow-400',
     High: 'text-red-400',
   };
+
+  const probabilityValue = analysisResult ? parseInt(analysisResult.successProbability, 10) : 0;
 
   return (
     <div>
@@ -111,19 +114,20 @@ const AnalysisPage: React.FC = () => {
             <div className="space-y-6">
                 <div>
                     <h3 className="font-semibold text-orange-400 mb-1">{t('analysis_probability')}</h3>
-                    <p className="text-3xl font-bold text-white">{analysisResult.successProbability}</p>
+                    <p className="text-2xl font-bold text-white">{analysisResult.successProbability}</p>
+                    <ProbabilityGauge probability={probabilityValue} />
                 </div>
                  <div>
                     <h3 className="font-semibold text-orange-400 mb-1">{t('analysis_risk')}</h3>
-                    <p className={`text-3xl font-bold ${riskColor[analysisResult.riskAssessment]}`}>{analysisResult.riskAssessment}</p>
+                    <p className={`text-2xl font-bold ${riskColor[analysisResult.riskAssessment]}`}>{analysisResult.riskAssessment}</p>
                 </div>
                 <div>
                     <h3 className="font-semibold text-orange-400 mb-1">{t('analysis_detailed')}</h3>
-                    <p className="text-gray-300 whitespace-pre-wrap">{analysisResult.detailedAnalysis}</p>
+                    <p className="text-gray-300 whitespace-pre-wrap text-base">{analysisResult.detailedAnalysis}</p>
                 </div>
                 <div>
                     <h3 className="font-semibold text-orange-400 mb-1">{t('analysis_opinion')}</h3>
-                    <p className="text-gray-300 font-medium italic">"{analysisResult.aiOpinion}"</p>
+                    <p className="text-gray-300 font-medium italic text-base">"{analysisResult.aiOpinion}"</p>
                 </div>
             </div>
           )}

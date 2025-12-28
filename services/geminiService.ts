@@ -33,29 +33,41 @@ const responseSchema = {
     required: ["detailedAnalysis", "successProbability", "riskAssessment", "aiOpinion"],
 };
 
+const mockTranslations = {
+    fr: {
+        detail: (sport: string, match: string, betType: string) => `Ceci est une analyse fictive pour le match de ${sport} : ${match}, concernant le type de pari : ${betType}. L'IA fournirait normalement une analyse approfondie des statistiques, des performances récentes, de l'état des joueurs et des données historiques pour formuler cet avis.`,
+        opinion: "Ce verdict fictif suggère que le pari a une chance de succès modérée. Dans un scénario réel, ce serait une déclaration concluante basée sur l'analyse détaillée fournie."
+    },
+    en: {
+        detail: (sport: string, match: string, betType: string) => `This is a mock analysis for the ${sport} match: ${match}, regarding the bet type: ${betType}. The AI would typically provide a deep dive into statistics, recent performance, player conditions, and historical data to formulate this opinion.`,
+        opinion: "This mock verdict suggests the bet has a moderate chance of success. In a real scenario, this would be a conclusive statement based on the detailed analysis provided."
+    }
+}
 
-const generateMockAnalysis = (request: AnalysisRequest): AnalysisResult['response'] => {
+const generateMockAnalysis = (request: AnalysisRequest, language: 'fr' | 'en' = 'en'): AnalysisResult['response'] => {
     return {
-        detailedAnalysis: `This is a mock analysis for the ${request.sport} match: ${request.match}, regarding the bet type: ${request.betType}. The AI would typically provide a deep dive into statistics, recent performance, player conditions, and historical data to formulate this opinion. Key factors would include team morale, upcoming fixtures, and even weather conditions.`,
+        detailedAnalysis: mockTranslations[language].detail(request.sport, request.match, request.betType),
         successProbability: `${Math.floor(Math.random() * 50) + 40}%`,
         riskAssessment: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)] as 'Low' | 'Medium' | 'High',
-        aiOpinion: "This mock verdict suggests the bet has a moderate chance of success. In a real scenario, this would be a conclusive statement based on the detailed analysis provided, offering a clear 'go' or 'no-go' for beginner bettors."
+        aiOpinion: mockTranslations[language].opinion
     };
 };
 
-export const getBetAnalysis = async (request: AnalysisRequest): Promise<AnalysisResult['response']> => {
-  // FIX: Corrected typo from API_key to API_KEY.
+export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
   if (!API_KEY) {
       console.log("Using mock analysis response.");
-      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1500));
-      return generateMockAnalysis(request);
+      return generateMockAnalysis(request, language);
   }
+  
+  const languageFullName = language === 'fr' ? 'French' : 'English';
 
   const prompt = `
     You are an expert sports betting analyst AI called NextWin.
     Your goal is to provide a detailed, unbiased, and data-driven analysis of a sports bet.
     The user is a beginner, so explain your reasoning clearly and simply.
+    
+    IMPORTANT: Your entire response, including all fields in the JSON output, MUST be in the following language: ${languageFullName}.
 
     The bet to analyze is:
     - Sport: ${request.sport}
@@ -88,6 +100,6 @@ export const getBetAnalysis = async (request: AnalysisRequest): Promise<Analysis
   } catch (error) {
     console.error("Error fetching analysis from Gemini API:", error);
     // Fallback to mock data on API error
-    return generateMockAnalysis(request);
+    return generateMockAnalysis(request, language);
   }
 };
