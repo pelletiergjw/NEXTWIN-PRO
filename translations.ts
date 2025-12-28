@@ -27,6 +27,9 @@ export const translations = {
     footer_contact_title: 'Contact',
     footer_contact_link: 'Contactez-nous',
     footer_copyright: 'Tous droits réservés.',
+    footer_warning: "Avertissement : Les paris sportifs comportent des risques. Ne pariez que ce que vous pouvez vous permettre de perdre. Nos analyses sont fournies à titre informatif et ne constituent pas des conseils en investissement. Les performances passées ne préjugent pas des résultats futurs. Jouez responsable - ",
+    footer_warning_link_text: "www.joueurs-info-service.fr",
+
 
     // Protected Route
     protected_title: 'Accès Exclusif aux Membres',
@@ -49,6 +52,8 @@ export const translations = {
     home_cta_title: "Prêt à prendre l'avantage ?",
     home_cta_subtitle: "Rejoignez la communauté NextWin dès aujourd'hui et transformez votre approche des paris sportifs.",
     home_cta_button: "Voir nos tarifs",
+    home_bookmakers_title: "Compatible avec vos bookmakers préférés",
+    home_bookmakers_subtitle: "NextWin fonctionne de manière indépendante. Analysez les paris de n'importe quel site.",
 
     // How It Works page
     howitworks_title: "Comment ça marche ?",
@@ -305,6 +310,8 @@ export const translations = {
     footer_contact_title: 'Contact',
     footer_contact_link: 'Contact Us',
     footer_copyright: 'All rights reserved.',
+    footer_warning: "Warning: Sports betting involves risks. Only bet what you can afford to lose. Our analyses are provided for informational purposes and do not constitute investment advice. Past performance is not indicative of future results. Gamble responsibly - ",
+    footer_warning_link_text: "www.joueurs-info-service.fr",
 
     // Protected Route
     protected_title: 'Exclusive Member Access',
@@ -327,6 +334,8 @@ export const translations = {
     home_cta_title: "Ready to get an edge?",
     home_cta_subtitle: "Join the NextWin community today and transform your approach to sports betting.",
     home_cta_button: "See our pricing",
+    home_bookmakers_title: "Compatible with your favorite bookmakers",
+    home_bookmakers_subtitle: "NextWin works independently. Analyze bets from any site.",
 
     // How It Works page
     howitworks_title: "How It Works",

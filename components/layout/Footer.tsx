@@ -57,8 +57,18 @@ const Footer: React.FC = () => {
             </ul>
           </div>
         </div>
-        <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-          &copy; {new Date().getFullYear()} NextWin. {t('footer_copyright')}
+        <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-500">
+          <div className="text-xs mb-4">
+            <p className="max-w-4xl mx-auto">
+              {t('footer_warning')}
+              <a href="http://www.joueurs-info-service.fr" target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">
+                {t('footer_warning_link_text')}
+              </a>
+            </p>
+          </div>
+          <div className="text-sm">
+            &copy; {new Date().getFullYear()} NextWin. {t('footer_copyright')}
+          </div>
         </div>
       </div>
     </footer>

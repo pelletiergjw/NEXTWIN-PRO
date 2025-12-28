@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import { SPORTS } from '../../constants';
 import HeroImage from '../../components/HeroImage';
 import { useLanguage } from '../../hooks/useLanguage';
+import BookmakerLogos from '../../components/BookmakerLogos';
 
 const FeatureCard: React.FC<{ icon: string; title: string; description: string }> = ({ icon, title, description }) => (
   <Card className="text-center transform hover:scale-105 transition-transform duration-300">
@@ -79,6 +80,9 @@ const HomePage: React.FC = () => {
           </Link>
         </div>
       </section>
+
+      {/* Bookmakers Section */}
+      <BookmakerLogos />
 
        {/* CTA Section */}
       <section>
