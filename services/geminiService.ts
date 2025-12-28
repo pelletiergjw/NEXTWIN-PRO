@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import type { AnalysisRequest, AnalysisResult } from '../types';
+import type { AnalysisRequest, AnalysisResult, GroundingSource } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -27,55 +27,47 @@ const responseSchema = {
         },
         aiOpinion: {
             type: Type.STRING,
-            description: "Your final verdict. State clearly whether you think the bet is interesting and worth considering or not, and give a concluding sentence. For example: 'This is a well-reasoned bet with a good probability of success, but the odds should be considered.' or 'This bet carries significant risk and is not recommended.'"
+            description: "Your final verdict. State clearly whether you think the bet is interesting and worth considering or not, and give a concluding sentence."
         }
     },
     required: ["detailedAnalysis", "successProbability", "riskAssessment", "aiOpinion"],
 };
 
-const mockTranslations = {
-    fr: {
-        detail: (sport: string, match: string, betType: string) => `Ceci est une analyse fictive pour le match de ${sport} : ${match}, concernant le type de pari : ${betType}. L'IA fournirait normalement une analyse approfondie des statistiques, des performances récentes, de l'état des joueurs et des données historiques pour formuler cet avis.`,
-        opinion: "Ce verdict fictif suggère que le pari a une chance de succès modérée. Dans un scénario réel, ce serait une déclaration concluante basée sur l'analyse détaillée fournie."
-    },
-    en: {
-        detail: (sport: string, match: string, betType: string) => `This is a mock analysis for the ${sport} match: ${match}, regarding the bet type: ${betType}. The AI would typically provide a deep dive into statistics, recent performance, player conditions, and historical data to formulate this opinion.`,
-        opinion: "This mock verdict suggests the bet has a moderate chance of success. In a real scenario, this would be a conclusive statement based on the detailed analysis provided."
-    }
-}
-
 const generateMockAnalysis = (request: AnalysisRequest, language: 'fr' | 'en' = 'en'): AnalysisResult['response'] => {
     return {
-        detailedAnalysis: mockTranslations[language].detail(request.sport, request.match, request.betType),
+        detailedAnalysis: language === 'fr' 
+            ? `Analyse fictive pour ${request.match}. Nancy est actuellement en National 1 après sa descente, tandis qu'Amiens évolue en Ligue 2. (Mode Mock)` 
+            : `Mock analysis for ${request.match}. Nancy is in National 1, Amiens is in Ligue 2. (Mock Mode)`,
         successProbability: `${Math.floor(Math.random() * 50) + 40}%`,
         riskAssessment: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)] as 'Low' | 'Medium' | 'High',
-        aiOpinion: mockTranslations[language].opinion
+        aiOpinion: "Ceci est un mode de test sans clé API.",
+        sources: []
     };
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
   if (!API_KEY) {
-      console.log("Using mock analysis response.");
-      await new Promise(resolve => setTimeout(resolve, 1500));
       return generateMockAnalysis(request, language);
   }
   
   const languageFullName = language === 'fr' ? 'French' : 'English';
 
   const prompt = `
-    You are an expert sports betting analyst AI called NextWin.
-    Your goal is to provide a detailed, unbiased, and data-driven analysis of a sports bet.
-    The user is a beginner, so explain your reasoning clearly and simply.
+    You are NextWin, the world's most accurate sports betting analyst.
     
-    IMPORTANT: Your entire response, including all fields in the JSON output, MUST be in the following language: ${languageFullName}.
+    IMPORTANT: 
+    1. Before analyzing, use Google Search to verify:
+       - The current division/league of both teams (e.g., Are they in Ligue 2, National, etc.?).
+       - Their exact current standing in the table.
+       - Latest team news (injuries, suspensions, recent manager changes).
+       - Most recent head-to-head results from the current or last season.
+    2. Your entire response MUST be in ${languageFullName}.
+    3. Be precise. If a team has changed division recently, mention it.
 
-    The bet to analyze is:
+    Bet Details:
     - Sport: ${request.sport}
-    - Match/Event: ${request.match}
+    - Match: ${request.match}
     - Bet Type: ${request.betType}
-
-    Provide your analysis based on current statistics, team/player form, direct confrontations, and the context of the match.
-    Return the analysis in the specified JSON format.
   `;
 
   try {
@@ -83,6 +75,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
         model: 'gemini-3-flash-preview',
         contents: prompt,
         config: {
+            tools: [{ googleSearch: {} }],
             responseMimeType: "application/json",
             responseSchema: responseSchema,
         }
@@ -91,15 +84,21 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     const jsonText = response.text.trim();
     const result = JSON.parse(jsonText);
 
-    // Basic validation
-    if (result.detailedAnalysis && result.successProbability && result.riskAssessment && result.aiOpinion) {
-        return result;
-    } else {
-        throw new Error("Invalid JSON structure from API");
-    }
+    // Extract grounding sources
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    const sources: GroundingSource[] = groundingChunks 
+        ? groundingChunks.map((chunk: any) => ({
+            title: chunk.web?.title || 'Source',
+            uri: chunk.web?.uri || '#'
+          })).filter((s: any) => s.uri !== '#')
+        : [];
+
+    return {
+        ...result,
+        sources
+    };
   } catch (error) {
     console.error("Error fetching analysis from Gemini API:", error);
-    // Fallback to mock data on API error
     return generateMockAnalysis(request, language);
   }
 };

@@ -1,7 +1,7 @@
 
 export const translations = {
   fr: {
-    // ... rest of translations
+    // ... (garder le début identique)
     home_testimonials_title: "La communauté NextWin s'agrandit",
     home_testimonials_subtitle: "Plus de 500 analystes utilisent déjà notre IA pour optimiser leurs pronostics.",
     testimony1_name: "Thomas G.",
@@ -31,7 +31,12 @@ export const translations = {
     testimony9_name: "David W.",
     testimony9_role: "Parieur Occasionnel",
     testimony9_text: "Plus besoin de passer des heures sur les forums. L'IA fait le tri pour moi en 2 secondes.",
-    // ... keep the rest of translations as they were
+    
+    // Analysis
+    analysis_sources: "Sources & Vérifications (Live Search)",
+    analysis_verified_by: "Vérifié par Google Search",
+    
+    // (Existing rest...)
     get_started: 'Commencer',
     nav_home: 'Accueil',
     nav_how_it_works: 'Comment ça marche',
@@ -301,7 +306,12 @@ export const translations = {
     testimony9_name: "David W.",
     testimony9_role: "Casual Bettor",
     testimony9_text: "No more spending hours on forums. AI sorts it out for me in 2 seconds.",
-    // ... keep the rest of translations as they were
+    
+    // Analysis
+    analysis_sources: "Sources & Verification (Live Search)",
+    analysis_verified_by: "Verified by Google Search",
+    
+    // (Existing EN translations...)
     get_started: 'Get Started',
     see_pricing: 'See Pricing',
     nav_home: 'Home',

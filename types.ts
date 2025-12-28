@@ -5,6 +5,11 @@ export interface User {
   name: string;
 }
 
+export interface GroundingSource {
+  title: string;
+  uri: string;
+}
+
 export interface AnalysisRequest {
   sport: string;
   match: string;
@@ -19,6 +24,7 @@ export interface AnalysisResult {
     successProbability: string;
     riskAssessment: 'Low' | 'Medium' | 'High';
     aiOpinion: string;
+    sources?: GroundingSource[];
   };
   timestamp: string;
 }
