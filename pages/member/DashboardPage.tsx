@@ -44,6 +44,12 @@ const DashboardPage: React.FC = () => {
           disabled={!isSubscribed}
         />
         <DashboardCard 
+          title={t('dashboard_card_bankroll_title')}
+          description={t('dashboard_card_bankroll_desc')}
+          link="/bankroll"
+          linkText={t('dashboard_card_bankroll_cta')}
+        />
+        <DashboardCard 
           title={t('dashboard_card_history_title')}
           description={t('dashboard_card_history_desc')}
           link="/history"

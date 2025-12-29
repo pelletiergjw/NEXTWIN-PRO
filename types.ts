@@ -62,3 +62,13 @@ export interface Sport {
   betTypes: BetType[];
   entityNamesKey: [TranslationKey, TranslationKey];
 }
+
+export interface Bet {
+  id: string;
+  date: string;
+  description: string;
+  stake: number;
+  odds: number;
+  result: 'win' | 'loss' | 'pending';
+  profitOrLoss: number;
+}

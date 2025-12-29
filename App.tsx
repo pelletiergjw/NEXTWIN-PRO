@@ -22,6 +22,7 @@ import HistoryPage from './pages/member/HistoryPage';
 import DailyPicksPage from './pages/member/DailyPicksPage';
 import SubscriptionPage from './pages/member/SubscriptionPage';
 import ProfilePage from './pages/member/ProfilePage';
+import BankrollPage from './pages/member/BankrollPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const App: React.FC = () => {
@@ -49,6 +50,7 @@ const App: React.FC = () => {
           <Route path="/analysis" element={<ProtectedRoute requireSubscription><AnalysisPage /></ProtectedRoute>} />
           <Route path="/daily-picks" element={<ProtectedRoute requireSubscription><DailyPicksPage /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute requireSubscription><HistoryPage /></ProtectedRoute>} />
+          <Route path="/bankroll" element={<ProtectedRoute><BankrollPage /></ProtectedRoute>} />
           <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         </Routes>
