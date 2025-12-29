@@ -23,11 +23,11 @@ const responseSchema = {
         },
         matchDate: {
             type: Type.STRING,
-            description: "The official date of the match (e.g., '15 Octobre 2024'). Found using search.",
+            description: "The official date of the match in French time (e.g., '16 Octobre 2024'). Found using search and converted.",
         },
         matchTime: {
             type: Type.STRING,
-            description: "The official local kick-off time (e.g., '21:00'). Found using search.",
+            description: "The official French kick-off time (e.g., '03:00'). Found using search and converted.",
         },
         aiOpinion: {
             type: Type.STRING,
@@ -51,8 +51,8 @@ const dailyPicksSchema = {
           probability: { type: Type.STRING },
           analysis: { type: Type.STRING },
           confidence: { type: Type.STRING, enum: ["High", "Very High"] },
-          matchDate: { type: Type.STRING, description: "Detected match date" },
-          matchTime: { type: Type.STRING, description: "Detected local match time" }
+          matchDate: { type: Type.STRING, description: "Detected match date, converted to French time" },
+          matchTime: { type: Type.STRING, description: "Detected match time, converted to French time (CET/CEST)" }
         },
         required: ["sport", "match", "betType", "probability", "analysis", "confidence", "matchDate", "matchTime"]
       }
@@ -65,11 +65,15 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
-    Search for today's and tomorrow's major upcoming sports matches in Football, Basketball, and Tennis.
-    Identify 3 high-probability betting opportunities for EACH sport (9 picks total).
-    For each match, you MUST find the EXACT date and local time.
-    Only select bets with a success probability higher than 70%.
-    Provide the response in ${language === 'fr' ? 'French' : 'English'}.
+    System instruction: You are an expert sports analyst providing predictions for a French audience. Your primary goal is to provide accurate and relevant information for users located in France.
+
+    Task:
+    1. Search for today's and tomorrow's major upcoming sports matches in Football, Basketball, and Tennis.
+    2. Identify 3 high-probability betting opportunities for EACH sport (9 picks total).
+    3. For each match, you MUST find its official local date and time and then convert it to French time (CET/CEST).
+    4. IMPORTANT: Adjust the date if the match happens on the next day in France (e.g., an NBA game at 7 PM in the US is on the next calendar day in France).
+    5. Only select bets with a success probability higher than 70%.
+    6. Provide the entire response in ${language === 'fr' ? 'French' : 'English'}.
   `;
 
   try {
@@ -115,16 +119,17 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   const languageFullName = language === 'fr' ? 'French' : 'English';
 
   const prompt = `
-    You are NextWin, the world's most accurate sports betting analyst.
-    
-    IMPORTANT: 
+    You are NextWin, the world's most accurate sports betting analyst, providing expertise for a French audience.
+
+    IMPORTANT:
     1. Before analyzing, use Google Search to verify:
-       - The EXACT date and time of this match.
+       - The EXACT official local date and time of this match.
        - The current division/league of both teams.
        - Latest team news (injuries, suspensions).
        - Most recent head-to-head results.
-    2. Your entire response MUST be in ${languageFullName}.
-    3. Return the matchDate and matchTime clearly in the JSON.
+    2. Crucially, you MUST convert the match time to French time (CET/CEST) and adjust the date if necessary (e.g., a match at 10 PM in New York on October 15th is at 4 AM on October 16th in France).
+    3. Your entire response MUST be in ${languageFullName}.
+    4. Return the converted French date and time clearly in the JSON.
 
     Bet Details:
     - Sport: ${request.sport}

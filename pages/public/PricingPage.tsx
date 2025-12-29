@@ -22,7 +22,7 @@ const PricingPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto text-center py-12 px-4">
-      <h1 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tight">{t('pricing_title')}</h1>
+      <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">{t('pricing_title')}</h1>
       <p className="text-xl text-gray-400 mb-16 max-w-2xl mx-auto leading-relaxed">
         {t('pricing_subtitle')}
       </p>
@@ -76,7 +76,7 @@ const PricingPage: React.FC = () => {
           )}
           
           <p className="mt-8 text-[10px] text-gray-500 uppercase font-bold tracking-tighter opacity-60">
-            Paiement sécurisé via Stripe • Résiliation en 1 clic
+            {t('pricing_payment_info' as any)}
           </p>
         </Card>
       </div>

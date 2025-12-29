@@ -23,6 +23,18 @@ const TermsOfSalePage: React.FC = () => {
         
         <h2 className="text-xl font-semibold text-white pt-4">{t('tos_article5_title')}</h2>
         <p>{t('tos_article5_content')}</p>
+        
+        <h2 className="text-xl font-semibold text-white pt-4">{t('tos_article6_title')}</h2>
+        <p>{t('tos_article6_content')}</p>
+
+        <h2 className="text-xl font-semibold text-white pt-4">{t('tos_article7_title')}</h2>
+        <p>{t('tos_article7_content')}</p>
+
+        <h2 className="text-xl font-semibold text-white pt-4">{t('tos_article8_title')}</h2>
+        <p>{t('tos_article8_content')}</p>
+
+        <h2 className="text-xl font-semibold text-white pt-4">{t('tos_article9_title')}</h2>
+        <p>{t('tos_article9_content')}</p>
       </Card>
     </div>
   );

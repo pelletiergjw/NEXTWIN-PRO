@@ -24,17 +24,20 @@ const PrivacyPolicyPage: React.FC = () => {
           <li>{t('privacy_usage_item5')}</li>
         </ul>
 
-        <h2 className="text-xl font-semibold text-white pt-4">{t('privacy_confidentiality_title')}</h2>
-        <p>{t('privacy_confidentiality_content')}</p>
+        <h2 className="text-xl font-semibold text-white pt-4">{t('privacy_sharing_title')}</h2>
+        <p>{t('privacy_sharing_content')}</p>
 
-        <h2 className="text-xl font-semibold text-white pt-4">{t('privacy_protection_title')}</h2>
-        <p>{t('privacy_protection_content')}</p>
+        <h2 className="text-xl font-semibold text-white pt-4">{t('privacy_retention_title')}</h2>
+        <p>{t('privacy_retention_content')}</p>
+
+        <h2 className="text-xl font-semibold text-white pt-4">{t('privacy_rights_title')}</h2>
+        <p>{t('privacy_rights_content')}</p>
         
         <h2 className="text-xl font-semibold text-white pt-4">{t('privacy_cookies_title')}</h2>
         <p>{t('privacy_cookies_content')}</p>
         
-        <h2 className="text-xl font-semibold text-white pt-4">{t('privacy_consent_title')}</h2>
-        <p>{t('privacy_consent_content')}</p>
+        <h2 className="text-xl font-semibold text-white pt-4">{t('privacy_updates_title')}</h2>
+        <p>{t('privacy_updates_content')}</p>
       </Card>
     </div>
   );
