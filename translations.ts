@@ -76,7 +76,7 @@ export const translations = {
     dashboard_card_history_title: "Mon Historique",
     dashboard_card_history_desc: "Retrouvez toutes vos analyses passées.",
     dashboard_card_history_cta: "Voir l'historique",
-    dashboard_card_picks_title: "9 Pronos IA",
+    dashboard_card_picks_title: "Pronos du jour",
     dashboard_card_picks_desc: "Consultez les 9 sélections exclusives de l'IA (Foot, Basket, Tennis).",
     dashboard_card_picks_cta: "Voir les pronos",
     dashboard_card_sub_title: "Abonnement",
@@ -88,7 +88,7 @@ export const translations = {
     dashboard_card_disabled: "Premium uniquement",
 
     // Daily Picks Page
-    daily_picks_title: "Vos 9 Pronos IA",
+    daily_picks_title: "Vos 9 pronos du jour",
     daily_picks_subtitle: "Voici les meilleures opportunités détectées par notre IA pour aujourd'hui.",
     daily_picks_loading: "Recherche des meilleures cotes sur le web...",
     daily_picks_football: "Football (Top 3)",
@@ -410,7 +410,7 @@ export const translations = {
     dashboard_card_history_title: "My History",
     dashboard_card_history_desc: "Find all your past analyses.",
     dashboard_card_history_cta: "View History",
-    dashboard_card_picks_title: "9 AI Picks",
+    dashboard_card_picks_title: "Daily Picks",
     dashboard_card_picks_desc: "Check the 9 exclusive AI selections for today.",
     dashboard_card_picks_cta: "View Picks",
     dashboard_card_sub_title: "Subscription",
@@ -422,7 +422,7 @@ export const translations = {
     dashboard_card_disabled: "Premium only",
 
     // Daily Picks
-    daily_picks_title: "Your 9 AI Picks",
+    daily_picks_title: "Your 9 Daily Picks",
     daily_picks_subtitle: "Here are the best opportunities detected by our AI for today.",
     daily_picks_loading: "Searching for the best odds on the web...",
     daily_picks_football: "Soccer (Top 3)",
