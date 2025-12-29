@@ -135,7 +135,7 @@ export const translations = {
 
     // Contact
     contact_title: 'Contactez-nous',
-    contact_subtitle: 'Une question ? Une suggestion ? Notre équipe vous répond sous 24h.',
+    contact_subtitle: 'Une question ? Une suggestion ? Laissez-nous un message et nous reviendrons vers vous rapidement.',
     contact_success_title: 'Message envoyé !',
     contact_success_subtitle: 'Merci pour votre message. Nous vous répondrons dans les plus brefs délais.',
     contact_name: 'Nom complet',
@@ -143,6 +143,13 @@ export const translations = {
     contact_subject: 'Sujet',
     contact_message: 'Votre message',
     contact_send: 'Envoyer le message',
+    contact_info_title: 'Nos Coordonnées',
+    contact_info_email: 'contact@nextwin-ia.com',
+    contact_response_time_title: 'Délais de réponse',
+    contact_response_time_desc: 'Notre équipe s\'engage à vous répondre sous 24 heures ouvrées.',
+    contact_check_faq: 'Consultez notre FAQ',
+    contact_faq_desc: 'De nombreuses réponses s\'y trouvent déjà. Gagnez du temps !',
+    contact_back_home: 'Retour à l\'accueil',
     
     // Auth & Protected
     protected_title: 'Espace Premium',
@@ -469,7 +476,7 @@ export const translations = {
 
     // Contact
     contact_title: 'Contact Us',
-    contact_subtitle: 'A question? A suggestion? Our team will get back to you within 24 hours.',
+    contact_subtitle: 'A question? A suggestion? Leave us a message and we will get back to you shortly.',
     contact_success_title: 'Message Sent!',
     contact_success_subtitle: 'Thank you for your message. We will get back to you as soon as possible.',
     contact_name: 'Full Name',
@@ -477,6 +484,13 @@ export const translations = {
     contact_subject: 'Subject',
     contact_message: 'Your message',
     contact_send: 'Send Message',
+    contact_info_title: 'Our Coordinates',
+    contact_info_email: 'contact@nextwin-ia.com',
+    contact_response_time_title: 'Response Time',
+    contact_response_time_desc: 'Our team is committed to responding to you within 24 business hours.',
+    contact_check_faq: 'Check our FAQ',
+    contact_faq_desc: 'Many answers are already there. Save time!',
+    contact_back_home: 'Back to Home',
 
     // Auth & Protected
     protected_title: 'Premium Area',
