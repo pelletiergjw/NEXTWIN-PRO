@@ -4,11 +4,10 @@ import { Link } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import { SPORTS } from '../../constants';
-import HeroImage from '../../components/HeroImage';
 import { useLanguage } from '../../hooks/useLanguage';
 import BookmakerLogos from '../../components/BookmakerLogos';
 import Testimonials from '../../components/Testimonials';
-import Logo from '../../components/Logo';
+import HeroImage from '../../components/HeroImage';
 
 const FeatureCard: React.FC<{ icon: string; title: string; description: string; highlight?: boolean }> = ({ icon, title, description, highlight }) => (
   <Card className={`text-center transform hover:scale-105 transition-all duration-300 ${highlight ? 'border-orange-500 ring-1 ring-orange-500/20' : ''}`}>
