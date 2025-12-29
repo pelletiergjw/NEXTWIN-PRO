@@ -99,13 +99,15 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
 const generateMockAnalysis = (request: AnalysisRequest, language: 'fr' | 'en' = 'en'): AnalysisResult['response'] => {
     return {
         detailedAnalysis: language === 'fr' 
-            ? `Analyse fictive pour ${request.match}. Nancy est actuellement en National 1 après sa descente, tandis qu'Amiens évolue en Ligue 2. (Mode Mock)` 
-            : `Mock analysis for ${request.match}. Nancy is in National 1, Amiens is in Ligue 2. (Mock Mode)`,
+            ? `Analyse fictive pour ${request.match}. Ce contenu est généré car aucune clé API n'est configurée. Les informations affichées, comme la division des équipes, sont des exemples et non des données réelles.` 
+            : `Mock analysis for ${request.match}. This content is generated because no API key is configured. The displayed information, such as team divisions, are examples and not real data.`,
         successProbability: `${Math.floor(Math.random() * 50) + 40}%`,
         riskAssessment: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)] as 'Low' | 'Medium' | 'High',
         matchDate: "12 Octobre 2024",
         matchTime: "20:45",
-        aiOpinion: "Ceci est un mode de test sans clé API.",
+        aiOpinion: language === 'fr' 
+            ? "Ceci est une analyse de démonstration. Configurez une clé API pour des résultats en direct."
+            : "This is a demonstration analysis. Configure an API key for live results.",
         sources: []
     };
 };
@@ -121,15 +123,13 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   const prompt = `
     You are NextWin, the world's most accurate sports betting analyst, providing expertise for a French audience.
 
-    IMPORTANT:
-    1. Before analyzing, use Google Search to verify:
-       - The EXACT official local date and time of this match.
-       - The current division/league of both teams.
-       - Latest team news (injuries, suspensions).
-       - Most recent head-to-head results.
-    2. Crucially, you MUST convert the match time to French time (CET/CEST) and adjust the date if necessary (e.g., a match at 10 PM in New York on October 15th is at 4 AM on October 16th in France).
-    3. Your entire response MUST be in ${languageFullName}.
-    4. Return the converted French date and time clearly in the JSON.
+    CRITICAL INSTRUCTIONS:
+    1. Your primary task is to use Google Search to find the most up-to-date, real-time information for your analysis. Do not rely on your pre-existing knowledge, as sports data changes constantly.
+    2. You MUST verify the current, official division/league for BOTH teams involved in the match. This is a mandatory step. For example, verify if a team is in 'Ligue 2' or 'National 1' for the current season. State this clearly in your analysis.
+    3. You MUST verify the EXACT official local date and time of this match and convert it to French time (CET/CEST), adjusting the date if necessary (e.g., a match at 10 PM in New York on October 15th is at 4 AM on October 16th in France).
+    4. You MUST search for the latest team news (injuries, suspensions, key player form) and recent head-to-head results.
+    5. Your entire response MUST be in ${languageFullName}.
+    6. Return the converted French date and time clearly in the JSON.
 
     Bet Details:
     - Sport: ${request.sport}
