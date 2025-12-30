@@ -8,6 +8,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import BookmakerLogos from '../../components/BookmakerLogos';
 import Testimonials from '../../components/Testimonials';
 import HeroCarousel from '../../components/HeroCarousel';
+import IdentityCarousel from '../../components/IdentityCarousel';
 
 const HomePage: React.FC = () => {
   const { t } = useLanguage();
@@ -58,7 +59,39 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Features Grid (Replaces StatBoxes based on design image) */}
+      {/* Identity Section (New) */}
+      <section className="container mx-auto px-4 py-10">
+        <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+            <div className="lg:w-1/2 space-y-8 text-center lg:text-left">
+                <span className="text-[11px] font-black text-orange-400 uppercase tracking-[0.4em]">ADN Technologique</span>
+                <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">Plus qu'un algorithme, <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500">une identité forte.</span></h2>
+                <p className="text-lg text-gray-400 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
+                    NextWin incarne la fusion parfaite entre la science des données et l'expertise sportive. Notre mission est d'apporter la rigueur de la finance aux marchés des paris sportifs.
+                </p>
+                <div className="pt-4 flex flex-col sm:flex-row items-center gap-6 justify-center lg:justify-start">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">🌍</span>
+                        <div className="text-left">
+                            <p className="text-white font-bold text-sm">Présence Globale</p>
+                            <p className="text-xs text-gray-500">Sources mondiales</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">🔬</span>
+                        <div className="text-left">
+                            <p className="text-white font-bold text-sm">Recherche & Dev</p>
+                            <p className="text-xs text-gray-500">Innovation continue</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="lg:w-1/2 w-full max-w-md mx-auto">
+                <IdentityCarousel />
+            </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
       <section className="container mx-auto px-4 max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FeatureCard 
