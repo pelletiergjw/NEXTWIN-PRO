@@ -77,7 +77,7 @@ const LiveSearchSlide: React.FC<{ active: boolean }> = ({ active }) => (
                 <span className="text-[8px] md:text-base">☁️</span>
                 <p className="text-[7px] md:text-xs font-black text-white/70 uppercase">Météo</p>
             </div>
-            <div className="absolute bottom-2 right-2 md:bottom-0 md:right-1 flex items-center gap-1.5 bg-gray-900/80 rounded-full px-2 py-1 border border-white/10">
+            <div className="absolute bottom-2 right-2 md:bottom-0 md:left-1 flex items-center gap-1.5 bg-gray-900/80 rounded-full px-2 py-1 border border-white/10">
                 <span className="text-[8px] md:text-base">💰</span>
                 <p className="text-[7px] md:text-xs font-black text-white/70 uppercase">Cotes</p>
             </div>
@@ -161,40 +161,47 @@ const HeadToHeadSlide: React.FC<{ active: boolean }> = ({ active }) => (
 
 const BankrollSlide: React.FC<{ active: boolean }> = ({ active }) => (
     <SlideContainer active={active}>
-        <div className="flex justify-between items-center pb-2 md:pb-4 border-b border-white/10">
-            <h3 className="text-[10px] md:text-lg font-bold text-white">Gestion de Capital</h3>
-            <span className="text-[7px] md:text-[9px] uppercase font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">Secure</span>
+        <div className="flex justify-between items-center pb-2 md:pb-3 border-b border-white/10">
+            <h3 className="text-[10px] md:text-lg font-black text-white">Gestion Bankroll Pro</h3>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 border border-green-500/30 rounded-full">
+                <span className="text-[7px] md:text-[9px] uppercase font-black text-green-400 tracking-wider">Algorithmique</span>
+            </div>
         </div>
-        <div className="flex flex-col md:flex-row gap-3 mt-3 md:mt-4">
-            <div className="flex-1 space-y-2">
-                <div className="bg-white/5 p-2 rounded-xl">
-                    <p className="text-[7px] md:text-[10px] text-gray-400 uppercase font-bold">Solde Actuel</p>
-                    <p className="font-black text-sm md:text-2xl text-green-400">1,234.50€</p>
-                </div>
-                <div className="flex gap-2">
-                    <div className="flex-1 bg-white/5 p-2 rounded-xl">
-                        <p className="text-[7px] md:text-[10px] text-gray-400 uppercase font-bold">Profit</p>
-                        <p className="font-black text-[10px] md:text-lg text-green-400">+234€</p>
-                    </div>
-                    <div className="flex-1 bg-white/5 p-2 rounded-xl">
-                        <p className="text-[7px] md:text-[10px] text-gray-400 uppercase font-bold">ROI</p>
-                        <p className="font-black text-[10px] md:text-lg text-green-400">+15%</p>
-                    </div>
-                </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mt-4">
+            <div className="bg-white/5 p-2 md:p-3 rounded-xl border border-white/5">
+                <p className="text-[6px] md:text-[9px] text-gray-500 uppercase font-black tracking-widest mb-1">Bankroll</p>
+                <p className="text-[10px] md:text-xl font-black text-white">1,234€</p>
             </div>
-            <div className="flex-1 bg-gray-900/40 p-2 rounded-xl border border-white/5 overflow-hidden">
-                 <p className="text-[7px] md:text-[10px] text-gray-500 mb-1.5 uppercase font-bold tracking-widest text-center">Historique</p>
-                 <div className="space-y-1">
-                    <div className="flex justify-between items-center bg-green-500/10 p-1.5 rounded text-[7px] md:text-[9px] font-bold">
-                        <span className="text-white">✅ PSG win</span>
-                        <span className="text-green-400">+42€</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-red-500/10 p-1.5 rounded text-[7px] md:text-[9px] font-bold">
-                        <span className="text-white">❌ Nadal lost</span>
-                        <span className="text-red-400">-15€</span>
-                    </div>
-                 </div>
+            <div className="bg-white/5 p-2 md:p-3 rounded-xl border border-white/5">
+                <p className="text-[6px] md:text-[9px] text-gray-500 uppercase font-black tracking-widest mb-1">Profit Net</p>
+                <p className="text-[10px] md:text-xl font-black text-green-400">+234€</p>
             </div>
+            <div className="bg-white/5 p-2 md:p-3 rounded-xl border border-white/5">
+                <p className="text-[6px] md:text-[9px] text-gray-500 uppercase font-black tracking-widest mb-1">Yield (%)</p>
+                <p className="text-[10px] md:text-xl font-black text-orange-400">+12.5%</p>
+            </div>
+            <div className="bg-white/5 p-2 md:p-3 rounded-xl border border-white/5">
+                <p className="text-[6px] md:text-[9px] text-gray-500 uppercase font-black tracking-widest mb-1">Winrate</p>
+                <p className="text-[10px] md:text-xl font-black text-blue-400">68%</p>
+            </div>
+        </div>
+
+        <div className="mt-4 bg-gray-900/40 p-2 md:p-4 rounded-2xl border border-white/5">
+            <div className="flex justify-between items-center mb-2">
+                <p className="text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Performance sur 30 jours</p>
+                <span className="text-[7px] md:text-[9px] font-bold text-green-400">Croissance Positive</span>
+            </div>
+            <div className="flex items-end gap-1 h-12 md:h-16">
+                {[30, 45, 35, 60, 55, 75, 90, 85, 100].map((h, i) => (
+                    <div key={i} className="flex-1 bg-gradient-to-t from-orange-500/20 to-orange-500 rounded-t-sm md:rounded-t-md transition-all duration-1000" style={{ height: `${h}%`, opacity: active ? 1 : 0.2 }}></div>
+                ))}
+            </div>
+        </div>
+
+        <div className="absolute bottom-3 left-3 right-3 md:bottom-6 md:left-6 md:right-6 bg-green-500/5 p-2 rounded-lg border border-green-500/10 flex items-center justify-between">
+            <p className="text-[7px] md:text-[10px] text-white/70 italic">"Suivi automatisé du capital initial et du profit net."</p>
+            <span className="text-[8px] md:text-xs">📈</span>
         </div>
     </SlideContainer>
 );
@@ -275,7 +282,7 @@ const HeroCarousel: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length);
-    }, 3000); // Updated to 3 seconds for professional reading time
+    }, 3000); // 3 seconds interval for professional reading time
     return () => clearTimeout(timer);
   }, [currentIndex]);
 
