@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 
 const SlideContainer: React.FC<{ children: React.ReactNode, active: boolean }> = ({ children, active }) => (
     <div className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${active ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="relative w-full h-full bg-[#151522]/90 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-lg p-3 md:p-6 overflow-hidden">
+        <div className="relative w-full h-full bg-[#151522]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-lg p-3 md:p-6 overflow-hidden">
             {children}
         </div>
     </div>
@@ -92,27 +92,49 @@ const LiveSearchSlide: React.FC<{ active: boolean }> = ({ active }) => (
     </SlideContainer>
 );
 
-const DailyPicksSlide: React.FC<{ active: boolean }> = ({ active }) => (
-    <SlideContainer active={active}>
-        <div className="flex justify-between items-center pb-2 md:pb-4 border-b border-white/10">
-            <h3 className="text-[10px] md:text-lg font-bold text-white">Sélections du Jour</h3>
-            <span className="text-[7px] md:text-[9px] uppercase font-black text-green-300 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">Algorithme Actif</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 md:gap-3 mt-3 md:mt-4">
-            {[
-                { s: '⚽ Foot', m: 'PSG vs Marseille', p: 'Vainqueur: PSG (1.65)' },
-                { s: '🏀 Basket', m: 'Lakers vs Warriors', p: 'Over 225.5 (1.80)' },
-                { s: '🎾 Tennis', m: 'Alcaraz vs Sinner', p: 'Gagnant: Sinner (2.10)' }
-            ].map((pick, i) => (
-                <div key={i} className="p-2 bg-gray-900/60 rounded-xl border border-white/5">
-                    <p className="font-black text-[7px] md:text-[9px] text-gray-500 uppercase tracking-widest mb-0.5">{pick.s}</p>
-                    <p className="font-bold text-[9px] md:text-xs text-white truncate">{pick.m}</p>
-                    <p className="text-[8px] md:text-xs text-orange-400 font-bold">{pick.p}</p>
+const DailyPicksSlide: React.FC<{ active: boolean }> = ({ active }) => {
+    const picks = [
+        { s: '⚽', m: 'PSG vs Marseille', p: 'PSG (1.65)' },
+        { s: '⚽', m: 'City vs Arsenal', p: 'Over 2.5 (1.75)' },
+        { s: '⚽', m: 'Real vs Barca', p: 'BTTS (1.50)' },
+        { s: '🏀', m: 'Lakers vs Warriors', p: 'Lakers (1.80)' },
+        { s: '🏀', m: 'Celtics vs Heat', p: 'Under 210 (1.90)' },
+        { s: '🏀', m: 'Bulls vs Knicks', p: 'Knicks (1.70)' },
+        { s: '🎾', m: 'Alcaraz vs Sinner', p: 'Sinner (2.10)' },
+        { s: '🎾', m: 'Djokovic vs Nadal', p: 'Over 22.5 (1.85)' },
+        { s: '🎾', m: 'Swiatek vs Sabalenka', p: 'Sabalenka (2.30)' },
+    ];
+
+    return (
+        <SlideContainer active={active}>
+            <div className="flex justify-between items-center pb-2 md:pb-3 border-b border-white/10">
+                <h3 className="text-[10px] md:text-lg font-bold text-white">Les 9 Pronostics du Jour</h3>
+                <span className="text-[7px] md:text-[9px] uppercase font-black text-green-300 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">9 Sélectionnés</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 md:gap-2.5 mt-2.5 md:mt-4">
+                {picks.map((pick, i) => (
+                    <div key={i} className="p-1.5 md:p-2 bg-gray-900/60 rounded-lg md:rounded-xl border border-white/5 hover:border-orange-500/30 transition-colors">
+                        <div className="flex items-center justify-between mb-0.5">
+                             <span className="text-[8px] md:text-xs">{pick.s}</span>
+                             <div className="w-1 h-1 bg-green-400 rounded-full shadow-[0_0_5px_rgba(74,222,128,0.5)]"></div>
+                        </div>
+                        <p className="font-bold text-[7px] md:text-[10px] text-white truncate leading-tight">{pick.m}</p>
+                        <p className="text-[6.5px] md:text-[9px] text-orange-400 font-black mt-0.5">{pick.p}</p>
+                    </div>
+                ))}
+            </div>
+            <div className="mt-2.5 md:mt-4 flex justify-center">
+                <div className="text-[6px] md:text-[10px] text-gray-500 uppercase font-bold tracking-widest flex items-center gap-2">
+                    <span>3 Football</span>
+                    <span className="w-1 h-1 bg-gray-700 rounded-full"></span>
+                    <span>3 Basketball</span>
+                    <span className="w-1 h-1 bg-gray-700 rounded-full"></span>
+                    <span>3 Tennis</span>
                 </div>
-            ))}
-        </div>
-    </SlideContainer>
-);
+            </div>
+        </SlideContainer>
+    );
+};
 
 const HeadToHeadSlide: React.FC<{ active: boolean }> = ({ active }) => (
     <SlideContainer active={active}>
@@ -179,20 +201,60 @@ const BankrollSlide: React.FC<{ active: boolean }> = ({ active }) => (
 
 const TacticalSlide: React.FC<{ active: boolean }> = ({ active }) => (
     <SlideContainer active={active}>
-        <div className="flex justify-between items-center pb-2 md:pb-4 border-b border-white/10"><h3 className="text-[10px] md:text-lg font-bold text-white">Analyse Tactique</h3></div>
-        <div className="w-full h-full flex items-center justify-center p-2">
-             <svg className="w-full h-auto max-h-[140px] md:max-h-full" viewBox="0 0 200 130">
+        <div className="flex justify-between items-center pb-2 md:pb-4 border-b border-white/10">
+            <h3 className="text-[10px] md:text-lg font-bold text-white">NextWin Tactical Pro</h3>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-500/10 border border-orange-500/30 rounded-full">
+                <span className="text-[7px] md:text-[9px] uppercase font-black text-orange-400">V4 Engine</span>
+            </div>
+        </div>
+        <div className="w-full h-full flex items-center justify-center p-1 md:p-3">
+             <svg className="w-full h-auto max-h-[160px] md:max-h-full drop-shadow-2xl" viewBox="0 0 200 130">
                 <defs>
-                    <filter id="heatmapBlur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="8" /></filter>
-                    <marker id="arrowhead" markerWidth="5" markerHeight="3.5" refX="5" refY="1.75" orient="auto"><polygon points="0 0, 5 1.75, 0 3.5" fill="#F97316" /></marker>
+                    <linearGradient id="fieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style={{stopColor: '#10101A', stopOpacity: 1}} />
+                        <stop offset="100%" style={{stopColor: '#1A1A2F', stopOpacity: 1}} />
+                    </linearGradient>
+                    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />
+                        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                    <filter id="heatMap" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
+                    </filter>
                 </defs>
-                <rect x="1" y="1" width="198" height="128" fill="rgba(16, 185, 129, 0.05)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" rx="5" />
-                <line x1="100" y1="1" x2="100" y2="129" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                <circle cx="100" cy="65" r="15" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                <ellipse cx="70" cy="40" rx="30" ry="20" fill="rgba(249, 115, 22, 0.2)" filter="url(#heatmapBlur)" />
-                <path d="M 40 40 C 60 20, 90 30, 110 50" stroke="#F97316" fill="none" strokeWidth="1" strokeDasharray="2 1" marker-end="url(#arrowhead)" />
-                <circle cx="40" cy="40" r="3" fill="#F97316" stroke="white" strokeWidth="0.3" />
-                <circle cx="110" cy="50" r="3" fill="#F97316" stroke="white" strokeWidth="0.3" />
+                
+                {/* Field Structure */}
+                <rect x="2" y="2" width="196" height="126" fill="url(#fieldGrad)" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" rx="4" />
+                <line x1="100" y1="2" x2="100" y2="128" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+                <circle cx="100" cy="65" r="18" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+                
+                {/* Tactical Elements - Heatmaps */}
+                <ellipse cx="140" cy="45" rx="30" ry="20" fill="rgba(249, 115, 22, 0.15)" filter="url(#heatMap)" />
+                <ellipse cx="155" cy="45" rx="15" ry="10" fill="rgba(249, 115, 22, 0.25)" filter="url(#heatMap)" />
+                <ellipse cx="40" cy="85" rx="25" ry="15" fill="rgba(59, 130, 246, 0.1)" filter="url(#heatMap)" />
+                
+                {/* Attack Vectors */}
+                <path d="M 60 40 Q 100 20, 160 45" stroke="#F97316" fill="none" strokeWidth="1.2" strokeDasharray="3 2" filter="url(#neonGlow)" />
+                <path d="M 160 45 L 152 41 M 160 45 L 152 49" stroke="#F97316" strokeWidth="1.2" />
+                
+                <path d="M 140 85 Q 90 100, 40 85" stroke="#3B82F6" fill="none" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+                
+                {/* Player Nodes */}
+                <circle cx="160" cy="45" r="3.5" fill="#F97316" stroke="white" strokeWidth="0.5" filter="url(#neonGlow)" />
+                <text x="165" y="42" fill="white" fontSize="5" fontWeight="black" fontFamily="sans-serif">K. Mbappé</text>
+                <text x="165" y="48" fill="#F97316" fontSize="4" fontWeight="bold">ZONE DANGER</text>
+                
+                <circle cx="40" cy="85" r="3" fill="#3B82F6" stroke="white" strokeWidth="0.5" />
+                <text x="25" y="94" fill="#3B82F6" fontSize="4" fontWeight="black" textAnchor="middle">BLOC BAS</text>
+
+                {/* Data Overlays */}
+                <rect x="5" y="5" width="40" height="15" rx="2" fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.2" />
+                <text x="8" y="11" fill="rgba(255,255,255,0.5)" fontSize="3.5" fontWeight="bold">XP: 2.14</text>
+                <text x="8" y="17" fill="#F97316" fontSize="3.5" fontWeight="black">POSS: 58%</text>
+
+                <rect x="155" y="110" width="40" height="15" rx="2" fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.2" />
+                <text x="158" y="116" fill="rgba(255,255,255,0.5)" fontSize="3.5" fontWeight="bold">CONFIANCE</text>
+                <text x="158" y="122" fill="#22C55E" fontSize="4" fontWeight="black">TRÈS HAUTE</text>
             </svg>
         </div>
     </SlideContainer>
@@ -213,7 +275,7 @@ const HeroCarousel: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length);
-    }, 2000);
+    }, 3000); // Updated to 3 seconds for professional reading time
     return () => clearTimeout(timer);
   }, [currentIndex]);
 
@@ -226,7 +288,7 @@ const HeroCarousel: React.FC = () => {
       <div className="relative w-full aspect-[3.5/4] sm:aspect-[4/3] md:aspect-[16/9] transform transition-all duration-500 md:group-hover:-translate-y-2">
          {/* Shimmer Effect */}
         <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none z-20">
-            <div className="absolute top-0 left-[-150%] w-[100%] h-full bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_3s_ease-in-out_infinite]"></div>
+            <div className="absolute top-0 left-[-150%] w-[100%] h-full bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_3s_ease-in_out_infinite]"></div>
         </div>
         
         {slides.map((Slide, index) => (
