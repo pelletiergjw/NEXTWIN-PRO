@@ -5,109 +5,180 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { useLanguage } from '../../hooks/useLanguage';
 
-const FeatureVisual: React.FC<{ type: 'bar-chart' | 'pie-chart' | 'calculator' }> = ({ type }) => {
-  const barChart = (
-    <svg viewBox="0 0 100 60" className="w-full h-auto" aria-hidden="true">
-      <rect x="10" y="30" width="15" height="30" fill="#F97316" rx="2" opacity="0.5"/>
-      <rect x="30" y="20" width="15" height="40" fill="#F97316" rx="2" opacity="0.7"/>
-      <rect x="50" y="10" width="15" height="50" fill="#F97316" rx="2" />
-      <rect x="70" y="25" width="15" height="35" fill="#F97316" rx="2" opacity="0.8"/>
-      <line x1="5" y1="60" x2="95" y2="60" stroke="#4B5563" strokeWidth="2"/>
-    </svg>
-  );
-
-  const pieChart = (
-    <svg viewBox="0 0 100 60" className="w-full h-auto" aria-hidden="true">
-        <circle cx="50" cy="30" r="28" fill="transparent" stroke="#4B5563" strokeWidth="4"/>
-        <path d="M 50 2 A 28 28 0 0 1 78 30 L 50 30 Z" fill="#10B981" />
-        <path d="M 78 30 A 28 28 0 0 1 22 30 L 50 30 Z" fill="#EF4444" />
-        <path d="M 22 30 A 28 28 0 0 1 50 2 L 50 30 Z" fill="#F59E0B" />
-    </svg>
-  );
-  
-  const calculator = (
-      <div className="text-orange-400 font-mono text-center text-4xl font-black tracking-tighter">
-          [ (b*p - q) / b ]
-      </div>
-  )
-
-  switch (type) {
-    case 'bar-chart': return barChart;
-    case 'pie-chart': return pieChart;
-    case 'calculator': return calculator;
-    default: return null;
-  }
-};
-
-const FeatureCard: React.FC<{ icon: string; title: string; description: string; visual: 'bar-chart' | 'pie-chart' | 'calculator' }> = ({ icon, title, description, visual }) => (
-  <Card className="flex flex-col">
-    <div className="flex items-center gap-4 mb-4">
-      <div className="w-12 h-12 flex-shrink-0 bg-gray-800 rounded-lg flex items-center justify-center text-2xl text-orange-400">{icon}</div>
-      <h3 className="text-2xl font-bold text-white">{title}</h3>
+const PillarStep: React.FC<{ 
+    number: number; 
+    badge: string; 
+    title: string; 
+    description: string; 
+    icon: string;
+    isLast?: boolean;
+}> = ({ number, badge, title, description, icon, isLast }) => (
+    <div className="relative group">
+        {!isLast && (
+            <div className="absolute left-7 top-14 bottom-0 w-px bg-gradient-to-b from-orange-500/40 to-transparent hidden md:block"></div>
+        )}
+        <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start relative z-10">
+            <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-[#1C1C2B] border border-gray-800/60 flex items-center justify-center text-2xl shadow-xl group-hover:border-orange-500/40 transition-all duration-500 group-hover:scale-110">
+                {icon}
+            </div>
+            <div className="space-y-3">
+                <span className="inline-block px-2.5 py-0.5 bg-orange-500/10 text-orange-400 text-[8px] font-black tracking-widest uppercase rounded-full border border-orange-500/20">
+                    {badge}
+                </span>
+                <h3 className="text-2xl md:text-3xl font-black text-white leading-tight">{title}</h3>
+                <p className="text-gray-400 text-base md:text-lg leading-relaxed max-w-2xl font-medium opacity-90">
+                    {description}
+                </p>
+            </div>
+        </div>
     </div>
-    <p className="text-gray-300 flex-grow mb-6">{description}</p>
-    <div className="mt-auto bg-gray-900/50 rounded-lg p-6 border border-gray-800/50">
-      <FeatureVisual type={visual} />
-    </div>
-  </Card>
 );
 
 const BankrollFeaturePage: React.FC = () => {
-  const { t } = useLanguage();
+    const { t } = useLanguage();
+    
+    return (
+        <div className="max-w-5xl mx-auto space-y-24 md:space-y-32 py-10 px-4">
+            {/* Hero Section */}
+            <section className="text-center space-y-6">
+                <div className="inline-block p-0.5 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full mb-4 shadow-lg shadow-orange-500/10">
+                    <div className="bg-[#10101A] px-4 py-1 rounded-full">
+                         <span className="text-[9px] font-black text-white uppercase tracking-widest">Scientific Capital Management</span>
+                    </div>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                    {t('bankroll_feature_title')}
+                </h1>
+                <p className="text-base md:text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed font-medium">
+                    {t('bankroll_feature_subtitle')}
+                </p>
+            </section>
 
-  return (
-    <div className="max-w-6xl mx-auto py-8">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-6xl font-black text-white leading-tight tracking-tight">
-          {t('bankroll_feature_title')}
-        </h1>
-        <p className="text-lg md:text-xl text-gray-300 mt-6 max-w-3xl mx-auto leading-relaxed font-light">
-          {t('bankroll_feature_subtitle')}
-        </p>
-      </div>
+            {/* The 4 Pillars of Bankroll Protocol */}
+            <section className="max-w-3xl mx-auto space-y-16 md:space-y-24">
+                <PillarStep 
+                    number={1}
+                    badge="PILIER 1 : INITIALISATION"
+                    title={t('bankroll_feature1_title')}
+                    description={t('bankroll_feature1_desc')}
+                    icon="🏦"
+                />
+                <PillarStep 
+                    number={2}
+                    badge="PILIER 2 : ANALYSE DES PERFORMANCES"
+                    title={t('bankroll_feature2_title')}
+                    description={t('bankroll_feature2_desc')}
+                    icon="📊"
+                />
+                <PillarStep 
+                    number={3}
+                    badge="PILIER 3 : CALCULATEUR D'EXPOSITION"
+                    title={t('bankroll_feature3_title')}
+                    description={t('bankroll_feature3_desc')}
+                    icon="🧠"
+                />
+                <PillarStep 
+                    number={4}
+                    badge="PILIER 4 : HISTORIQUE CERTIFIÉ"
+                    title={t('bankroll_feature4_title')}
+                    description={t('bankroll_feature4_desc')}
+                    icon="🎯"
+                    isLast
+                />
+            </section>
 
-      <div className="mb-20">
-        <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('bankroll_feature_section_title')}</h2>
-            <div className="h-1.5 w-20 bg-gradient-to-r from-orange-500 to-pink-500 mx-auto rounded-full"></div>
+            {/* Tool Explanation Card */}
+            <section className="container mx-auto max-w-5xl">
+                <div className="bg-[#1C1C2B] border border-gray-800/40 rounded-[2.5rem] p-8 md:p-16 relative overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div className="grid lg:grid-cols-2 gap-12 items-center">
+                        <div className="space-y-8">
+                            <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
+                                Pourquoi NextWin a créé <span className="text-orange-500">cet outil ?</span>
+                            </h2>
+                            <p className="text-base md:text-lg text-gray-400 leading-relaxed font-medium">
+                                Dans le sport, la prédiction n'est que la moitié du chemin. La gestion du risque est ce qui sépare les amateurs des experts. Notre interface de gestion élimine l'approximation.
+                            </p>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-4 bg-gray-900/40 p-5 rounded-2xl border border-gray-800/60">
+                                    <span className="text-2xl">⚡</span>
+                                    <div>
+                                        <p className="text-white font-bold">Zéro Calcul Manuel</p>
+                                        <p className="text-sm text-gray-500 font-medium">ROI, Yield et Taux de réussite calculés en temps réel.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4 bg-gray-900/40 p-5 rounded-2xl border border-gray-800/60">
+                                    <span className="text-2xl">📈</span>
+                                    <div>
+                                        <p className="text-white font-bold">Vision Long Terme</p>
+                                        <p className="text-sm text-gray-500 font-medium">Graphiques d'évolution pour visualiser votre progression.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-gradient-to-br from-[#10101A] to-black rounded-[2rem] p-8 border border-gray-800 shadow-2xl relative">
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                                    <span className="text-xs font-black text-gray-500 uppercase tracking-widest">Dashboard Preview</span>
+                                    <span className="text-green-400 font-black text-xs">+12.5% Yield</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase">ROI</p>
+                                        <p className="text-xl font-black text-white">+15.2%</p>
+                                    </div>
+                                    <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase">Winrate</p>
+                                        <p className="text-xl font-black text-white">68%</p>
+                                    </div>
+                                </div>
+                                <div className="h-32 flex items-end gap-2 px-2">
+                                    <div className="flex-1 bg-orange-500/20 rounded-t-lg h-[40%]"></div>
+                                    <div className="flex-1 bg-orange-500/40 rounded-t-lg h-[60%]"></div>
+                                    <div className="flex-1 bg-orange-500/60 rounded-t-lg h-[45%]"></div>
+                                    <div className="flex-1 bg-orange-500/80 rounded-t-lg h-[75%]"></div>
+                                    <div className="flex-1 bg-orange-500 rounded-t-lg h-[90%]"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Final CTA */}
+            <section className="container mx-auto max-w-4xl">
+                <div className="relative p-0.5 bg-gradient-to-br from-orange-500 via-pink-500 to-purple-600 rounded-[2rem] overflow-hidden shadow-2xl group">
+                    <div className="bg-[#10101A] rounded-[1.95rem] py-16 px-8 md:py-20 md:px-12 text-center relative z-10 transition-transform group-hover:scale-[0.998] duration-500">
+                        <div className="absolute -top-20 -left-20 w-48 h-48 bg-orange-500/5 blur-[80px] pointer-events-none"></div>
+                        <div className="absolute -bottom-20 -right-20 w-48 h-48 bg-purple-500/5 blur-[80px] pointer-events-none"></div>
+                        
+                        <h2 className="text-3xl md:text-5xl font-black text-white mb-6 tracking-tight leading-tight">
+                            {t('bankroll_feature_cta_title')}
+                        </h2>
+                        <p className="text-base md:text-lg text-gray-400 mb-10 max-w-xl mx-auto font-medium leading-relaxed">
+                            {t('bankroll_feature_cta_desc')}
+                        </p>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+                            <Link to="/pricing" className="w-full sm:w-auto">
+                                <Button className="w-full px-12 py-4 text-xl font-black shadow-xl shadow-orange-500/20 rounded-xl transform hover:scale-105 transition-all">
+                                    {t('bankroll_feature_cta_button')}
+                                </Button>
+                            </Link>
+                        </div>
+                        <div className="mt-10 flex flex-wrap justify-center gap-6 opacity-30 text-[9px] font-black uppercase tracking-widest text-gray-500">
+                            <span>TOTAL PRIVACY</span>
+                            <span>•</span>
+                            <span>DATA ENCRYPTION</span>
+                            <span>•</span>
+                            <span>PRO TOOLS</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
-        <div className="grid md:grid-cols-2 gap-8">
-          <FeatureCard 
-            icon="📊" 
-            title={t('bankroll_feature1_title')} 
-            description={t('bankroll_feature1_desc')} 
-            visual="bar-chart"
-          />
-          <FeatureCard 
-            icon="📈" 
-            title={t('bankroll_feature2_title')} 
-            description={t('bankroll_feature2_desc')}
-            visual="pie-chart"
-          />
-          <FeatureCard 
-            icon="🧠" 
-            title={t('bankroll_feature3_title')} 
-            description={t('bankroll_feature3_desc')}
-            visual="calculator"
-          />
-           <FeatureCard 
-            icon="🎯" 
-            title={t('bankroll_feature4_title')} 
-            description={t('bankroll_feature4_desc')}
-            visual="bar-chart"
-          />
-        </div>
-      </div>
-
-      <Card className="text-center bg-gradient-to-br from-orange-500/10 to-pink-500/10 border-orange-500/20">
-        <h2 className="text-3xl font-bold text-white mb-4">{t('bankroll_feature_cta_title')}</h2>
-        <p className="text-gray-300 mb-8 max-w-xl mx-auto">{t('bankroll_feature_cta_desc')}</p>
-        <Link to="/pricing">
-          <Button className="px-10 py-4 text-lg shadow-lg shadow-orange-500/30">{t('bankroll_feature_cta_button')}</Button>
-        </Link>
-      </Card>
-    </div>
-  );
+    );
 };
 
 export default BankrollFeaturePage;
