@@ -1,8 +1,10 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
  * Service to interact with the NextWin AI engine for sports analysis and daily picks.
+ * Optimized for French precision, real-time accuracy, and 2024/2025 season validation.
  */
 
 const responseSchema = {
@@ -10,27 +12,27 @@ const responseSchema = {
     properties: {
         detailedAnalysis: {
             type: Type.STRING,
-            description: "A comprehensive analysis covering team form, head-to-head stats, key players, injuries, and match context. It MUST include a sentence confirming the current league of both teams.",
+            description: "Analyse complète. Doit impérativement confirmer la ligue actuelle (ex: Ligue 2, National) des deux équipes pour la saison 2024/2025 après vérification search.",
         },
         successProbability: {
             type: Type.STRING,
-            description: "A percentage representing the probability of the bet succeeding.",
+            description: "Pourcentage de réussite (ex: '72%').",
         },
         riskAssessment: {
             type: Type.STRING,
-            description: "An evaluation of the risk involved (Low, Medium, High).",
+            description: "Niveau de risque (Low, Medium, High).",
         },
         matchDate: {
             type: Type.STRING,
-            description: "The official date of the match in French time (e.g., '16 Octobre 2024'). Found using search and correctly converted to French timezone, adjusting the day if necessary.",
+            description: "Date officielle du match au format français (ex: 'Samedi 15 Mars 2025'). Doit correspondre à la date en France.",
         },
         matchTime: {
             type: Type.STRING,
-            description: "The official French kick-off time (e.g., '03:00'). Found using search and correctly converted to French timezone (CET/CEST).",
+            description: "Heure de coup d'envoi précise au format français (ex: '20:45'). Doit être l'heure de Paris (CET/CEST).",
         },
         aiOpinion: {
             type: Type.STRING,
-            description: "Your final verdict and concluding sentence."
+            description: "Verdict final professionnel."
         }
     },
     required: ["detailedAnalysis", "successProbability", "riskAssessment", "aiOpinion", "matchDate", "matchTime"],
@@ -50,8 +52,8 @@ const dailyPicksSchema = {
           probability: { type: Type.STRING },
           analysis: { type: Type.STRING },
           confidence: { type: Type.STRING, enum: ["High", "Very High"] },
-          matchDate: { type: Type.STRING, description: "Detected match date, correctly converted to French date (CET/CEST), day must be adjusted if necessary." },
-          matchTime: { type: Type.STRING, description: "Detected match time, correctly converted to French time (CET/CEST)." }
+          matchDate: { type: Type.STRING, description: "Date du match en France." },
+          matchTime: { type: Type.STRING, description: "Heure de Paris (CET/CEST)." }
         },
         required: ["sport", "match", "betType", "probability", "analysis", "confidence", "matchDate", "matchTime"]
       }
@@ -60,31 +62,39 @@ const dailyPicksSchema = {
   required: ["picks"]
 };
 
+/**
+ * Gets the current time in Paris to provide as anchor for the AI.
+ */
+const getParisTimeContext = () => {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('fr-FR', {
+        timeZone: 'Europe/Paris',
+        dateStyle: 'full',
+        timeStyle: 'long',
+    });
+    return formatter.format(now);
+};
+
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const languageFullName = language === 'fr' ? 'French' : 'English';
+  const timeContext = getParisTimeContext();
 
   const prompt = `
-    SYSTEM ROLE: You are the NextWin AI Engine, the world's most advanced sports betting predictive model. Your ONLY task is to provide 9 hyper-accurate predictions for a French audience. All data must be verified and presented for users located in France.
+    RÔLE SYSTÈME: Moteur NextWin v4.0. 
+    CONTEXTE TEMPOREL (PARIS): ${timeContext}
 
-    *** ABSOLUTE, UNBREAKABLE RULES FOR EACH OF THE 9 PICKS ***
-
-    RULE 1: USE ONLY LIVE DATA. You MUST use Google Search to find all match information. Your internal knowledge is forbidden and outdated.
-
-    RULE 2: FRENCH TIME IS LAW.
-        - For EACH of the 9 picks, you MUST perform a Google Search to find its official local start time AND date.
-        - You MUST then convert this local time and date to the French timezone (CET/CEST).
-        - **CRITICAL DATE ADJUSTMENT:** If a match is at 10 PM on Tuesday in the USA, it is on WEDNESDAY in France. Your 'matchDate' field for that pick MUST be the French date (Wednesday).
-        - The final, converted French date and time are the ONLY values permitted in the 'matchDate' and 'matchTime' JSON fields for each pick.
-
-    RULE 3: SELECTION CRITERIA. Select exactly 3 high-probability picks (over 70% success chance) for Football, 3 for Basketball, and 3 for Tennis. A total of 9 picks.
-
-    RULE 4: LANGUAGE. Your entire JSON response MUST be in ${languageFullName}.
+    INSTRUCTIONS CRITIQUES:
+    1. RECHERCHE GOOGLE OBLIGATOIRE: Trouve 9 matchs réels prévus AUJOURD'HUI ou DEMAIN.
+    2. VÉRIFICATION DIVISION: Assure-toi que les équipes sont dans leur division officielle 2024/2025. 
+    3. SYNCHRONISATION HORAIRE: Convertis tous les horaires trouvés en HEURE DE PARIS (CET/CEST).
+    4. SELECTION: Exactement 3 Foot, 3 Basket, 3 Tennis.
+    5. RÉPONSE: JSON en ${languageFullName}.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-flash-preview', 
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -105,15 +115,13 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
 const generateMockAnalysis = (request: AnalysisRequest, language: 'fr' | 'en' = 'en'): AnalysisResult['response'] => {
     return {
         detailedAnalysis: language === 'fr' 
-            ? `Analyse experte NextWin pour ${request.match}. Notre IA a identifié des patterns statistiques suggérant un avantage significatif.` 
-            : `NextWin expert analysis for ${request.match}. Our AI identified statistical patterns suggesting a significant advantage.`,
-        successProbability: `${Math.floor(Math.random() * 50) + 40}%`,
-        riskAssessment: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)] as 'Low' | 'Medium' | 'High',
-        matchDate: "Aujourd'hui",
-        matchTime: "20:45",
-        aiOpinion: language === 'fr' 
-            ? "Le modèle NextWin confirme la valeur de ce pari sur le long terme."
-            : "The NextWin model confirms the long-term value of this bet.",
+            ? `Analyse experte NextWin pour ${request.match}.` 
+            : `NextWin expert analysis for ${request.match}.`,
+        successProbability: "65%",
+        riskAssessment: 'Medium',
+        matchDate: "À vérifier",
+        matchTime: "--:--",
+        aiOpinion: "Analyse indisponible pour le moment.",
         sources: []
     };
 };
@@ -125,46 +133,39 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const languageFullName = language === 'fr' ? 'French' : 'English';
+  const timeContext = getParisTimeContext();
 
   const prompt = `
-    SYSTEM ROLE: You are the NextWin AI Analyzer, a hyper-precise sports betting analyst for a French audience. Accuracy is your ONLY priority. Errors in data are unacceptable.
+    RÔLE: Expert Analyste NextWin PRO. Précision de données absolue.
+    ERREUR INTERDITE SUR LES DIVISIONS ET HORAIRES.
+    
+    DATE ET HEURE ACTUELLE À PARIS: ${timeContext}
 
-    *** ABSOLUTE, UNBREAKABLE RULES ***
-    Failure to follow these rules constitutes a total failure of the task.
-
-    RULE 1: NO OLD DATA. You MUST use Google Search for EVERY piece of information in this request. Your internal knowledge is forbidden.
-
-    RULE 2: VERIFY LEAGUES.
-        - Before any analysis, you MUST perform a Google Search to find the EXACT current, official league for BOTH teams for the current season.
-        - You MUST include a sentence in your 'detailedAnalysis' that explicitly states these verified leagues.
-        - Example: For 'Amiens vs Nancy', you find Amiens is in Ligue 2 and Nancy is in National. Your analysis MUST contain: "Amiens SC évolue en Ligue 2, tandis que l'AS Nancy Lorraine joue en National pour la saison en cours."
-
-    RULE 3: FRENCH TIME IS LAW.
-        - You MUST perform a Google Search to find the official local start time AND date of the match.
-        - You MUST then convert this local time and date to the French timezone (CET/CEST).
-        - **CRITICAL DATE ADJUSTMENT:** If a match is at 10 PM on Tuesday in the USA, it is on WEDNESDAY in France.
-        - The final, converted French date and time are the ONLY values permitted.
-
-    RULE 4: ANALYZE. Provide a deep analysis based on fresh search results (form, injuries, H2H, etc.).
-
-    RULE 5: LANGUAGE. Your entire JSON response MUST be in ${languageFullName}.
-
-    ---
-    USER REQUEST:
+    PROTOCOLE OBLIGATOIRE:
+    1. VÉRIFICATION SEARCH: Recherche l'état actuel des deux équipes (${request.match}). 
+    2. VALIDATION LIGUE: Confirme impérativement la division/ligue pour la saison 2024/2025. 
+       Ex: Si Nancy est en National et Amiens en Ligue 2, tu dois l'énoncer clairement.
+    3. CALENDRIER: Trouve la date et l'heure exacte du match. Convertis en HEURE FRANÇAISE (Paris).
+       Si le match est déjà fini par rapport à "${timeContext}", signale-le.
+    4. ANALYSE PROFONDE: Stats, blessés, enjeux.
+    
+    DEMANDE UTILISATEUR:
     - Sport: ${request.sport}
     - Match: ${request.match}
-    - Bet Type: ${request.betType}
-    ---
+    - Type de pari: ${request.betType}
+
+    RÉPONDRE EN JSON (${languageFullName}).
   `;
 
   try {
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview', // Passage au modèle Pro pour une meilleure logique de recherche
         contents: prompt,
         config: {
             tools: [{ googleSearch: {} }],
             responseMimeType: "application/json",
             responseSchema: responseSchema,
+            thinkingConfig: { thinkingBudget: 4000 } // Autorise la réflexion pour réconcilier les données search
         }
     });
     
@@ -173,7 +174,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const sources: GroundingSource[] = groundingChunks 
         ? groundingChunks.map((chunk: any) => ({
-            title: chunk.web?.title || 'Source Vérifiée',
+            title: chunk.web?.title || 'Donnée Officielle',
             uri: chunk.web?.uri || '#'
           })).filter((s: any) => s.uri !== '#')
         : [];
@@ -192,9 +193,9 @@ export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'd
   
   let visualPrompt = '';
   if (style === 'dashboard') {
-    visualPrompt = `Futuristic high-tech sports data visualization dashboard for "${request.match}" (${request.sport}). Glowing holographic charts, probability heat maps, professional analytics software style. Cinematic, 4K, deep space blue and neon orange. No branding logos.`;
+    visualPrompt = `Futuristic pro sports analytics dashboard for "${request.match}". Win probabilities, data charts, neon orange/deep blue, 4K realistic UI.`;
   } else {
-    visualPrompt = `Tactical strategic sports map for "${request.match}" (${request.sport}). Showing player positions, heatzones, and tactical arrows on a high-tech digital field. Cyberpunk laboratory style, neon lines, data overlays. Top-down view, ultra-detailed. No branding logos.`;
+    visualPrompt = `Tactical tactical sports view for "${request.match}". Top-down dark pitch with neon glowing tactical arrows and heatmaps. High-tech.`;
   }
 
   try {
