@@ -1,5 +1,4 @@
-
-import React, { createContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { translations } from '../translations';
 
 export type Language = 'fr' | 'en';
@@ -8,7 +7,7 @@ type TranslationKey = keyof typeof translations.fr & keyof typeof translations.e
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: string) => string;
 }
 
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -16,8 +15,10 @@ export const LanguageContext = createContext<LanguageContextType | undefined>(un
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('fr');
 
-  const t = useCallback((key: TranslationKey): string => {
-    return translations[language][key] || key;
+  const t = useCallback((key: string): string => {
+    const dict = translations[language] as Record<string, string>;
+    if (!dict) return key;
+    return dict[key] || key;
   }, [language]);
   
   const value = { language, setLanguage, t };
