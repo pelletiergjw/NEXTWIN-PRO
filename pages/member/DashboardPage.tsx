@@ -48,6 +48,7 @@ const DashboardPage: React.FC = () => {
           description={t('dashboard_card_bankroll_desc')}
           link="/bankroll"
           linkText={t('dashboard_card_bankroll_cta')}
+          highlight
         />
         <DashboardCard 
           title={t('dashboard_card_history_title')}

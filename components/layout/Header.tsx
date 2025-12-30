@@ -22,13 +22,13 @@ const Header: React.FC = () => {
       isActive 
         ? 'text-white font-bold' 
         : 'text-gray-400 hover:text-white'
-    } md:after:content-[''] md:after:absolute md:after:bottom-0 md:after:left-0 md:after:w-full md:after:h-0.5 md:after:bg-gradient-to-r md:after:from-orange-500 md:after:to-pink-500 md:after:transform md:after:scale-x-0 md:after:transition-transform md:after:duration-300 ${
-      isActive ? 'md:after:scale-x-100' : 'hover:md:after:scale-x-100'
+    } lg:after:content-[''] lg:after:absolute lg:after:bottom-0 lg:after:left-0 lg:after:w-full lg:after:h-0.5 lg:after:bg-gradient-to-r lg:after:from-orange-500 lg:after:to-pink-500 lg:after:transform lg:after:scale-x-0 lg:after:transition-transform lg:after:duration-300 ${
+      isActive ? 'lg:after:scale-x-100' : 'hover:lg:after:scale-x-100'
     }`;
 
   return (
     <header className="bg-[#1C1C2B]/95 backdrop-blur-md sticky top-0 z-50 border-b border-gray-800/50">
-      <div className="container mx-auto px-4 h-20 flex items-center justify-between md:grid md:grid-cols-3">
+      <div className="container mx-auto px-4 h-20 w-full flex items-center justify-between lg:grid lg:grid-cols-[1fr_auto_1fr]">
         
         {/* Logo - Toujours à gauche */}
         <div className="flex justify-start z-50">
@@ -38,15 +38,16 @@ const Header: React.FC = () => {
         </div>
 
         {/* Navigation Desktop - Centrée */}
-        <div className="hidden md:flex justify-center items-center gap-8 lg:gap-10">
+        <div className="hidden lg:flex justify-center items-center gap-8 lg:gap-10 whitespace-nowrap">
           <NavLink to="/" className={navLinkClass}>{t('nav_home')}</NavLink>
           <NavLink to="/how-it-works" className={navLinkClass}>{t('nav_how_it_works')}</NavLink>
+          <NavLink to="/bankroll-feature" className={navLinkClass}>{t('nav_bankroll')}</NavLink>
           <NavLink to="/pricing" className={navLinkClass}>{t('nav_pricing')}</NavLink>
           <NavLink to="/faq" className={navLinkClass}>{t('nav_faq')}</NavLink>
         </div>
 
         {/* Actions Desktop - À droite */}
-        <div className="hidden md:flex items-center justify-end gap-4">
+        <div className="hidden lg:flex items-center justify-end gap-4">
           <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mr-2">
             <button 
               className={`transition-colors ${language === 'fr' ? 'text-orange-400 font-bold' : 'hover:text-white'}`}
@@ -76,7 +77,7 @@ const Header: React.FC = () => {
 
         {/* Bouton Toggle Mobile */}
         <button 
-          className="md:hidden z-50 p-2 text-gray-300 hover:text-white focus:outline-none"
+          className="lg:hidden z-50 p-2 text-gray-300 hover:text-white focus:outline-none"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label="Toggle Menu"
         >
@@ -91,11 +92,12 @@ const Header: React.FC = () => {
       </div>
 
       {/* Menu Mobile Overlay */}
-      <div className={`md:hidden absolute top-20 left-0 w-full bg-[#1C1C2B] border-b border-gray-800 transition-all duration-300 ease-in-out transform ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+      <div className={`lg:hidden absolute top-20 left-0 w-full bg-[#1C1C2B] border-b border-gray-800 transition-all duration-300 ease-in-out transform ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
         <div className="flex flex-col p-6 gap-6">
           <div className="flex flex-col gap-4">
             <NavLink to="/" className={navLinkClass}>{t('nav_home')}</NavLink>
             <NavLink to="/how-it-works" className={navLinkClass}>{t('nav_how_it_works')}</NavLink>
+            <NavLink to="/bankroll-feature" className={navLinkClass}>{t('nav_bankroll')}</NavLink>
             <NavLink to="/pricing" className={navLinkClass}>{t('nav_pricing')}</NavLink>
             <NavLink to="/faq" className={navLinkClass}>{t('nav_faq')}</NavLink>
           </div>

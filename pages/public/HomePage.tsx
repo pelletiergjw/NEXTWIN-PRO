@@ -7,12 +7,13 @@ import { SPORTS } from '../../constants';
 import { useLanguage } from '../../hooks/useLanguage';
 import BookmakerLogos from '../../components/BookmakerLogos';
 import Testimonials from '../../components/Testimonials';
-import HeroImage from '../../components/HeroImage';
+import HeroCarousel from '../../components/HeroCarousel';
 
-const FeatureCard: React.FC<{ icon: string; title: string; description: string; highlight?: boolean }> = ({ icon, title, description, highlight }) => (
+const FeatureCard: React.FC<{ icon: string; title: string; subtitle?: string; description: string; highlight?: boolean }> = ({ icon, title, subtitle, description, highlight }) => (
   <Card className={`text-center transform hover:scale-105 transition-all duration-300 ${highlight ? 'border-orange-500 ring-1 ring-orange-500/20' : ''}`}>
     <div className="text-5xl mb-4">{icon}</div>
-    <h3 className={`text-xl font-bold mb-2 ${highlight ? 'text-orange-400' : 'text-white'}`}>{title}</h3>
+    <h3 className={`text-xl font-bold ${subtitle ? 'mb-1' : 'mb-2'} ${highlight ? 'text-orange-400' : 'text-white'}`}>{title}</h3>
+    {subtitle && <p className="text-md font-semibold text-gray-300 mb-3">{subtitle}</p>}
     <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
   </Card>
 );
@@ -49,7 +50,7 @@ const HomePage: React.FC = () => {
           </div>
           
           <div className="w-full max-w-5xl mt-4">
-            <HeroImage />
+            <HeroCarousel />
           </div>
         </div>
       </section>
@@ -60,7 +61,7 @@ const HomePage: React.FC = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('home_features_title')}</h2>
           <div className="h-1.5 w-20 bg-gradient-to-r from-orange-500 to-pink-500 mx-auto rounded-full"></div>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <FeatureCard 
             icon="🏆" 
             title={t('home_feature1_title')}
@@ -76,6 +77,11 @@ const HomePage: React.FC = () => {
             icon="📈" 
             title={t('home_feature3_title')}
             description={t('home_feature3_desc')}
+          />
+          <FeatureCard 
+            icon="⚖️" 
+            title={t('home_feature4_title')}
+            description={t('home_feature4_desc')}
           />
         </div>
       </section>

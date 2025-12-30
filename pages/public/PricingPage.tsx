@@ -59,6 +59,10 @@ const PricingPage: React.FC = () => {
               <span className="text-green-500 font-bold text-xl leading-none">✓</span>
               <span className="text-sm font-medium">{t('pricing_feature4')}</span>
             </li>
+             <li className="flex items-start gap-3">
+              <span className="text-green-500 font-bold text-xl leading-none">✓</span>
+              <span className="text-sm font-medium">{t('pricing_feature6')}</span>
+            </li>
             <li className="flex items-start gap-3">
               <span className="text-green-500 font-bold text-xl leading-none">✓</span>
               <span className="text-sm font-medium">{t('pricing_feature5')}</span>

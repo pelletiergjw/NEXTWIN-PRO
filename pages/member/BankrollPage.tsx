@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -11,6 +12,63 @@ const StatCard: React.FC<{ title: string; value: string; color?: string }> = ({ 
     <p className={`text-3xl font-black ${color}`}>{value}</p>
   </Card>
 );
+
+const KellyCalculator: React.FC<{ bankroll: number, onStakeCalculated: (stake: number) => void }> = ({ bankroll, onStakeCalculated }) => {
+    const { t } = useLanguage();
+    const [kellyOdds, setKellyOdds] = useState('');
+    const [kellyProb, setKellyProb] = useState('');
+
+    const calculatedStake = useMemo(() => {
+        const odds = parseFloat(kellyOdds);
+        const prob = parseFloat(kellyProb);
+
+        if (isNaN(odds) || odds <= 1 || isNaN(prob) || prob <= 0 || prob > 100) {
+            return null;
+        }
+
+        const p = prob / 100;
+        const b = odds - 1;
+        const q = 1 - p;
+
+        const kellyFraction = (b * p - q) / b;
+
+        if (kellyFraction <= 0) {
+            return { percentage: 0, amount: 0 };
+        }
+
+        return {
+            percentage: kellyFraction * 100,
+            amount: kellyFraction * bankroll
+        };
+    }, [kellyOdds, kellyProb, bankroll]);
+
+    return (
+        <Card>
+            <h2 className="text-2xl font-bold text-white mb-2">{t('bankroll_kelly_title')}</h2>
+            <p className="text-sm text-gray-400 mb-4">{t('bankroll_kelly_subtitle')}</p>
+            <div className="space-y-4">
+                <Input id="kelly_odds" label={t('bankroll_kelly_odds')} type="number" step="0.01" value={kellyOdds} onChange={e => setKellyOdds(e.target.value)} placeholder="ex: 1.85" />
+                <Input id="kelly_prob" label={t('bankroll_kelly_probability')} type="number" step="0.1" value={kellyProb} onChange={e => setKellyProb(e.target.value)} placeholder={t('analysis_probability')} />
+                {calculatedStake !== null && (
+                    <div className="bg-gray-900/50 p-4 rounded-lg text-center">
+                        <p className="text-xs text-gray-400 uppercase font-bold">{t('bankroll_kelly_recommended_stake')}</p>
+                        <p className="text-2xl font-black text-orange-400">{calculatedStake.amount.toFixed(2)} €</p>
+                        <p className="text-sm font-bold text-gray-300">({calculatedStake.percentage.toFixed(2)}% de la bankroll)</p>
+                        <Button 
+                            variant="secondary" 
+                            className="w-full mt-3 text-xs" 
+                            onClick={() => onStakeCalculated(calculatedStake.amount)}
+                            disabled={calculatedStake.amount <= 0}
+                        >
+                            {t('bankroll_kelly_fill_stake_button')}
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </Card>
+    );
+};
+
 
 const BankrollPage: React.FC = () => {
   const { t } = useLanguage();
@@ -148,7 +206,7 @@ const BankrollPage: React.FC = () => {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex flex-col gap-8">
           <Card>
             <h2 className="text-2xl font-bold text-white mb-4">{t('bankroll_add_bet')}</h2>
             <form onSubmit={handleAddBet} className="space-y-4">
@@ -158,6 +216,12 @@ const BankrollPage: React.FC = () => {
               <Button type="submit" className="w-full">{t('bankroll_add_button')}</Button>
             </form>
           </Card>
+          {currentBankroll !== null && (
+            <KellyCalculator 
+                bankroll={currentBankroll} 
+                onStakeCalculated={(calculatedStake) => setStake(calculatedStake.toFixed(2))} 
+            />
+          )}
         </div>
 
         <div className="lg:col-span-2">

@@ -24,6 +24,7 @@ import SubscriptionPage from './pages/member/SubscriptionPage';
 import ProfilePage from './pages/member/ProfilePage';
 import BankrollPage from './pages/member/BankrollPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import BankrollFeaturePage from './pages/public/BankrollFeaturePage';
 
 const App: React.FC = () => {
   return (
@@ -44,6 +45,7 @@ const App: React.FC = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/bankroll-feature" element={<BankrollFeaturePage />} />
 
           {/* Member Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

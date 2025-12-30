@@ -11,7 +11,7 @@ const responseSchema = {
     properties: {
         detailedAnalysis: {
             type: Type.STRING,
-            description: "A comprehensive analysis covering team form, head-to-head stats, key players, injuries, and match context.",
+            description: "A comprehensive analysis covering team form, head-to-head stats, key players, injuries, and match context. It MUST include a sentence confirming the current league of both teams.",
         },
         successProbability: {
             type: Type.STRING,
@@ -23,11 +23,11 @@ const responseSchema = {
         },
         matchDate: {
             type: Type.STRING,
-            description: "The official date of the match in French time (e.g., '16 Octobre 2024'). Found using search and converted.",
+            description: "The official date of the match in French time (e.g., '16 Octobre 2024'). Found using search and correctly converted to French timezone, adjusting the day if necessary.",
         },
         matchTime: {
             type: Type.STRING,
-            description: "The official French kick-off time (e.g., '03:00'). Found using search and converted.",
+            description: "The official French kick-off time (e.g., '03:00'). Found using search and correctly converted to French timezone (CET/CEST).",
         },
         aiOpinion: {
             type: Type.STRING,
@@ -51,8 +51,8 @@ const dailyPicksSchema = {
           probability: { type: Type.STRING },
           analysis: { type: Type.STRING },
           confidence: { type: Type.STRING, enum: ["High", "Very High"] },
-          matchDate: { type: Type.STRING, description: "Detected match date, converted to French time" },
-          matchTime: { type: Type.STRING, description: "Detected match time, converted to French time (CET/CEST)" }
+          matchDate: { type: Type.STRING, description: "Detected match date, correctly converted to French date (CET/CEST), day must be adjusted if necessary." },
+          matchTime: { type: Type.STRING, description: "Detected match time, correctly converted to French time (CET/CEST)." }
         },
         required: ["sport", "match", "betType", "probability", "analysis", "confidence", "matchDate", "matchTime"]
       }
@@ -63,17 +63,24 @@ const dailyPicksSchema = {
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const languageFullName = language === 'fr' ? 'French' : 'English';
 
   const prompt = `
-    System instruction: You are an expert sports analyst providing predictions for a French audience. Your primary goal is to provide accurate and relevant information for users located in France.
+    SYSTEM ROLE: You are an expert sports analyst. Your ONLY task is to provide 9 hyper-accurate predictions for a French audience. All data must be verified and presented for users located in France.
 
-    Task:
-    1. Search for today's and tomorrow's major upcoming sports matches in Football, Basketball, and Tennis.
-    2. Identify 3 high-probability betting opportunities for EACH sport (9 picks total).
-    3. For each match, you MUST find its official local date and time and then convert it to French time (CET/CEST).
-    4. IMPORTANT: Adjust the date if the match happens on the next day in France (e.g., an NBA game at 7 PM in the US is on the next calendar day in France).
-    5. Only select bets with a success probability higher than 70%.
-    6. Provide the entire response in ${language === 'fr' ? 'French' : 'English'}.
+    *** ABSOLUTE, UNBREAKABLE RULES FOR EACH OF THE 9 PICKS ***
+
+    RULE 1: USE ONLY LIVE DATA. You MUST use Google Search to find all match information. Your internal knowledge is forbidden and outdated.
+
+    RULE 2: FRENCH TIME IS LAW.
+        - For EACH of the 9 picks, you MUST perform a Google Search to find its official local start time AND date.
+        - You MUST then convert this local time and date to the French timezone (CET/CEST).
+        - **CRITICAL DATE ADJUSTMENT:** If a match is at 10 PM on Tuesday in the USA, it is on WEDNESDAY in France. Your 'matchDate' field for that pick MUST be the French date (Wednesday). This is a frequent and critical conversion.
+        - The final, converted French date and time are the ONLY values permitted in the 'matchDate' and 'matchTime' JSON fields for each pick. No exceptions.
+
+    RULE 3: SELECTION CRITERIA. Select exactly 3 high-probability picks (over 70% success chance) for Football, 3 for Basketball, and 3 for Tennis. A total of 9 picks.
+
+    RULE 4: LANGUAGE. Your entire JSON response MUST be in ${languageFullName}.
   `;
 
   try {
@@ -121,20 +128,35 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   const languageFullName = language === 'fr' ? 'French' : 'English';
 
   const prompt = `
-    You are NextWin, the world's most accurate sports betting analyst, providing expertise for a French audience.
+    SYSTEM ROLE: You are NextWin, a hyper-precise sports betting analyst for a French audience. Accuracy is your ONLY priority. Errors in data are unacceptable.
 
-    CRITICAL INSTRUCTIONS:
-    1. Your primary task is to use Google Search to find the most up-to-date, real-time information for your analysis. Do not rely on your pre-existing knowledge, as sports data changes constantly.
-    2. You MUST verify the current, official division/league for BOTH teams involved in the match. This is a mandatory step. For example, verify if a team is in 'Ligue 2' or 'National 1' for the current season. State this clearly in your analysis.
-    3. You MUST verify the EXACT official local date and time of this match and convert it to French time (CET/CEST), adjusting the date if necessary (e.g., a match at 10 PM in New York on October 15th is at 4 AM on October 16th in France).
-    4. You MUST search for the latest team news (injuries, suspensions, key player form) and recent head-to-head results.
-    5. Your entire response MUST be in ${languageFullName}.
-    6. Return the converted French date and time clearly in the JSON.
+    *** ABSOLUTE, UNBREAKABLE RULES ***
+    Failure to follow these rules constitutes a total failure of the task.
 
-    Bet Details:
+    RULE 1: NO OLD DATA. You MUST use Google Search for EVERY piece of information in this request. Your internal knowledge is forbidden. Sports data changes constantly. This is the most important rule.
+
+    RULE 2: VERIFY LEAGUES.
+        - Before any analysis, you MUST perform a Google Search to find the EXACT current, official league for BOTH teams for the current season.
+        - You MUST include a sentence in your 'detailedAnalysis' that explicitly states these verified leagues. This is a mandatory proof of work.
+        - Example: For 'Amiens vs Nancy', you find Amiens is in Ligue 2 and Nancy is in National. Your analysis MUST contain: "Amiens SC évolue en Ligue 2, tandis que l'AS Nancy Lorraine joue en National pour la saison en cours."
+        - Mismatching a team's league is a critical error.
+
+    RULE 3: FRENCH TIME IS LAW.
+        - You MUST perform a Google Search to find the official local start time AND date of the match.
+        - You MUST then convert this local time and date to the French timezone (CET/CEST).
+        - **CRITICAL DATE ADJUSTMENT:** If a match is at 10 PM on Tuesday in the USA, it is on WEDNESDAY in France. You MUST return the French date. Your 'matchDate' field must reflect this change.
+        - The final, converted French date and time are the ONLY values permitted in the 'matchDate' and 'matchTime' JSON fields. No exceptions.
+
+    RULE 4: ANALYZE. After following rules 1, 2, and 3, provide a deep analysis based on your fresh search results (form, injuries, H2H, etc.).
+
+    RULE 5: LANGUAGE. Your entire JSON response MUST be in ${languageFullName}.
+
+    ---
+    USER REQUEST:
     - Sport: ${request.sport}
     - Match: ${request.match}
     - Bet Type: ${request.betType}
+    ---
   `;
 
   try {
