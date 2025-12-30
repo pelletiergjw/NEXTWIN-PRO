@@ -207,7 +207,7 @@ const HeroCarousel: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length);
-    }, 4000);
+    }, 2000); // 2 seconds delay
     return () => clearTimeout(timer);
   }, [currentIndex]);
 
