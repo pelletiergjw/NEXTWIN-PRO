@@ -23,20 +23,17 @@ const DailyPicksPage: React.FC = () => {
         if (data && data.length > 0) {
             setPicks(data);
         } else {
-            setError("Le moteur de recherche n'a pas retourné de matchs valides pour le moment.");
+            setError("Aucune sélection n'a pu être générée. Vérifiez votre quota d'API.");
         }
     } catch (e: any) {
-        console.error("Détail de l'erreur:", e);
+        console.error("Fetch Picks Error:", e);
         const msg = e.message || "";
-        
-        if (msg.includes("API_KEY_NOT_CONFIGURED")) {
-            setError("ERREUR CONFIGURATION : La clé API est manquante dans les secrets de votre dépôt GitHub.");
-        } else if (msg.includes("403") || msg.includes("API key not valid")) {
-            setError("ERREUR AUTHENTIFICATION : Votre clé API Google Gemini est invalide ou expirée.");
-        } else if (msg.includes("429")) {
-            setError("QUOTA DÉPASSÉ : Trop de requêtes envoyées à Google Gemini. Réessayez dans 1 minute.");
+        if (msg.includes("MISSING_IN_BUILD")) {
+            setError("ERREUR BUILD : La clé API n'a pas été injectée. Vérifiez vos Secrets GitHub.");
+        } else if (msg.includes("403")) {
+            setError("ERREUR CLÉ : Votre clé API Google Gemini est invalide ou restreinte.");
         } else {
-            setError(`ERREUR TECHNIQUE : ${msg || "Connexion au serveur Google impossible."}`);
+            setError(`ERREUR RÉSEAU : ${msg || "Échec de connexion au moteur Gemini."}`);
         }
     } finally {
         setIsLoading(false);
@@ -71,8 +68,8 @@ const DailyPicksPage: React.FC = () => {
         <div className="flex flex-col items-center justify-center py-24 gap-8">
           <Spinner />
           <div className="text-center space-y-2">
-            <p className="text-orange-400 font-bold animate-pulse uppercase tracking-widest text-sm">Synchronisation avec Google Search...</p>
-            <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.4em]">Analyse en temps réel v4.1</p>
+            <p className="text-orange-400 font-bold animate-pulse uppercase tracking-widest text-sm">Calcul des opportunités par IA...</p>
+            <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.4em]">Moteur NextWin v4.1</p>
           </div>
         </div>
       ) : filteredPicks.length > 0 ? (
@@ -86,24 +83,14 @@ const DailyPicksPage: React.FC = () => {
             <Card className="text-center py-16 px-8 rounded-[2.5rem] border-red-500/20 bg-[#151522] shadow-2xl">
                 <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl">📡</div>
                 <h3 className="text-white font-black text-xl mb-4">Flux Interrompu</h3>
-                <div className="bg-black/40 p-5 rounded-2xl border border-white/5 mb-8 text-left">
-                    <p className="text-[11px] text-red-400 font-bold uppercase tracking-widest leading-relaxed">
+                <div className="bg-black/40 p-5 rounded-2xl border border-white/5 mb-8">
+                    <p className="text-[11px] text-red-400 font-bold uppercase tracking-widest text-center">
                         {error}
                     </p>
                 </div>
                 <Button onClick={fetchPicks} className="w-full py-4 uppercase font-black tracking-widest shadow-xl shadow-orange-500/20">
-                    Redémarrer l'IA
+                    Redémarrer le moteur
                 </Button>
-                {error?.includes("CONFIGURATION") && (
-                    <div className="mt-8 pt-6 border-t border-white/5 text-left">
-                        <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-2">Checklist de dépannage :</p>
-                        <ul className="text-[9px] text-gray-600 font-bold uppercase space-y-1">
-                            <li>1. GitHub > Settings > Secrets > API_KEY</li>
-                            <li>2. GitHub > Settings > Pages > Source: GitHub Actions</li>
-                            <li>3. Relancer le déploiement (Push ou manuel)</li>
-                        </ul>
-                    </div>
-                )}
             </Card>
         </div>
       )}
