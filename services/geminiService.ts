@@ -3,8 +3,8 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Service NextWin AI - Version STABLE 2025
- * Utilisation de Gemini 3 Flash pour garantir la disponibilité et éviter les erreurs de quota (429).
+ * Service NextWin AI - Version PRODUCTION STABLE
+ * Utilise Gemini 3 Flash pour une haute disponibilité et éviter les erreurs de quota (429).
  */
 
 const getAIInstance = () => {
@@ -29,44 +29,46 @@ const getParisContext = () => {
 };
 
 const extractJsonFromText = (text: string) => {
-    if (!text) throw new Error("Réponse vide.");
-    let cleaned = text.trim();
-    if (cleaned.includes("```json")) cleaned = cleaned.split("```json")[1].split("```")[0];
-    else if (cleaned.includes("```")) cleaned = cleaned.split("```")[1].split("```")[0];
+    if (!text) throw new Error("Réponse vide de l'IA.");
     
+    // Nettoyage pour extraire uniquement le bloc JSON entre les premières et dernières accolades
+    let cleaned = text.trim();
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
     
     if (start !== -1 && end !== -1) {
-        cleaned = cleaned.substring(start, end + 1);
-        return JSON.parse(cleaned);
+        const jsonOnly = cleaned.substring(start, end + 1);
+        try {
+            return JSON.parse(jsonOnly);
+        } catch (e) {
+            // Tentative de nettoyage des caractères spéciaux invisibles
+            const sanitized = jsonOnly.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+            return JSON.parse(sanitized);
+        }
     }
-    throw new Error("Format de données invalide.");
+    throw new Error("L'IA n'a pas pu structurer les données. Veuillez réessayer.");
 };
 
-// Fonction utilitaire pour formater les erreurs API
 const handleApiError = (error: any) => {
-    console.error("Gemini API Error:", error);
-    const message = error?.message || "";
-    if (message.includes("429") || message.includes("quota")) {
-        return "Le moteur d'analyse est très sollicité. Veuillez patienter 30 secondes et réessayer.";
+    console.error("Gemini Error:", error);
+    const msg = error?.message || "";
+    if (msg.includes("429") || msg.includes("quota") || msg.includes("limit")) {
+        return "Le serveur est saturé. Veuillez patienter 30 secondes avant de cliquer sur Réessayer.";
     }
-    if (message.includes("API key")) {
-        return "Erreur de configuration : Clé API invalide ou manquante.";
-    }
-    return "Une erreur technique est survenue lors de l'analyse en temps réel.";
+    return "Erreur lors de l'analyse en temps réel. Veuillez vérifier les noms des équipes.";
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
   try {
     const ai = getAIInstance();
     const timeNow = getParisContext();
-    const prompt = `L'année actuelle est 2025. Aujourd'hui: ${timeNow}. 
-    Utilise Google Search pour trouver 9 VRAIS matchs pro (3 Foot, 3 Basket, 3 Tennis) prévus d'ici 48h.
-    Réponds UNIQUEMENT en JSON: {"picks": [{"sport": "...", "match": "...", "betType": "...", "probability": "XX%", "analysis": "...", "confidence": "High", "matchDate": "DD/MM/2025", "matchTime": "HH:MM"}]}.`;
+    const prompt = `Aujourd'hui: ${timeNow}. Année 2025.
+    Utilise Google Search pour trouver 9 matchs réels (3 Foot, 3 Basket, 3 Tennis) prévus d'ici 48h.
+    Retourne UNIQUEMENT ce JSON:
+    {"picks": [{"sport": "football|basketball|tennis", "match": "Equipe A vs Equipe B", "betType": "...", "probability": "XX%", "analysis": "...", "confidence": "High", "matchDate": "DD/MM/2025", "matchTime": "HH:MM"}]}`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Flash est plus stable pour les quotas
+      model: 'gemini-3-flash-preview', 
       contents: prompt,
       config: { tools: [{ googleSearch: {} }] }
     });
@@ -74,6 +76,7 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
     const result = extractJsonFromText(response.text || "{}");
     return result.picks || [];
   } catch (error) {
+    console.warn("Daily Picks Failed:", error);
     return [];
   }
 };
@@ -82,30 +85,32 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   try {
     const ai = getAIInstance();
     const timeNow = getParisContext();
-    const prompt = `Analyseur NextWin 2025. Heure Paris: ${timeNow}. 
-    MATCH: ${request.match}. PARI: ${request.betType}.
-    Utilise Google Search pour les infos réelles de 2025.
-    Réponds en JSON: {
-      "detailedAnalysis": "...", 
-      "successProbability": "XX%", 
-      "riskAssessment": "Low"|"Medium"|"High", 
-      "matchDate": "DD/MM/2025", 
-      "matchTime": "HH:MM", 
-      "aiOpinion": "..."
+    const prompt = `NextWin AI v4.2. Date: ${timeNow}.
+    MATCH: ${request.match} (${request.sport}). PARI: ${request.betType}.
+    1. Utilise Google Search pour les news réelles 2025 (compos, blessés).
+    2. Réponds UNIQUEMENT en JSON:
+    {
+      "detailedAnalysis": "Analyse technique précise...",
+      "successProbability": "XX%",
+      "riskAssessment": "Low"|"Medium"|"High",
+      "matchDate": "DD/MM/2025",
+      "matchTime": "HH:MM",
+      "aiOpinion": "Conseil de mise"
     }`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview', // Switch to Flash
+        model: 'gemini-3-flash-preview',
         contents: prompt,
-        config: { tools: [{ googleSearch: {} }] }
+        config: { 
+          tools: [{ googleSearch: {} }],
+          thinkingConfig: { thinkingBudget: 0 }
+        }
     });
     
     const result = extractJsonFromText(response.text || "{}");
-    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    const sources: GroundingSource[] = chunks.filter((c: any) => c.web?.uri).map((c: any) => ({
-        title: c.web.title || 'Source 2025',
-        uri: c.web.uri
-    }));
+    const sources: GroundingSource[] = (response.candidates?.[0]?.groundingMetadata?.groundingChunks || [])
+        .filter((c: any) => c.web?.uri)
+        .map((c: any) => ({ title: c.web.title || 'Source Info', uri: c.web.uri }));
 
     return { ...result, sources };
   } catch (error: any) {
@@ -116,7 +121,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
 export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'dashboard' | 'tactical' = 'dashboard'): Promise<string | undefined> => {
   try {
     const ai = getAIInstance();
-    const visualPrompt = `Professional sports visual for ${request.match} (2025), ${style} style, neon orange.`;
+    const visualPrompt = `Analytical sports ${style} visual for ${request.match}, neon orange and dark theme, 4K professional graphics.`;
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: { parts: [{ text: visualPrompt }] },
@@ -125,8 +130,6 @@ export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'd
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
     }
-  } catch (error) {
-    console.error("Visual Error:", error);
-  }
+  } catch (e) {}
   return undefined;
 };
