@@ -2,6 +2,15 @@
 // Dictionary of translations for French and English
 export const translations = {
   fr: {
+    // ... (existing translations)
+    bankroll_suggested_stake: "Mise Suggérée (Risque 5%)",
+    bankroll_add_funds: "Approvisionner Bankroll",
+    bankroll_deposit_amount: "Montant du dépôt (€)",
+    bankroll_deposit_success: "Fonds ajoutés avec succès",
+    bankroll_risk_title: "NextWin Risk Protocol",
+    bankroll_risk_desc: "Gestion automatique fixée à 5% de risque par unité pour protéger votre capital.",
+    bankroll_performance_bets: "Performance des paris",
+    
     // Navigation
     nav_home: 'Accueil',
     nav_how_it_works: 'Comment ça marche ?',
@@ -412,6 +421,15 @@ export const translations = {
     sports_intro_text: "Voici les marchés sur lesquels notre IA excelle en",
   },
   en: {
+    // ... (rest of dictionary)
+    bankroll_suggested_stake: "Suggested Stake (5% Risk)",
+    bankroll_add_funds: "Add Funds",
+    bankroll_deposit_amount: "Deposit Amount (€)",
+    bankroll_deposit_success: "Funds added successfully",
+    bankroll_risk_title: "NextWin Risk Protocol",
+    bankroll_risk_desc: "Automated 5% risk management to protect your capital.",
+    bankroll_performance_bets: "Bet performance",
+    
     // Navigation
     nav_home: 'Home',
     nav_how_it_works: 'How it works?',

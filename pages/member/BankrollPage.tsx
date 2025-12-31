@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -23,20 +24,25 @@ const BankrollPage: React.FC = () => {
   const { t } = useLanguage();
   const [initialCapital, setInitialCapital] = useState<number | null>(null);
   const [currentBankroll, setCurrentBankroll] = useState<number | null>(null);
+  const [totalDeposits, setTotalDeposits] = useState<number>(0);
   const [bets, setBets] = useState<Bet[]>([]);
   
   const [description, setDescription] = useState('');
   const [stake, setStake] = useState('');
   const [odds, setOdds] = useState('');
+  const [depositAmount, setDepositAmount] = useState('');
+  const [showDepositForm, setShowDepositForm] = useState(false);
 
   useEffect(() => {
     const storedCapital = localStorage.getItem('nextwin_initialCapital');
     const storedBankroll = localStorage.getItem('nextwin_currentBankroll');
+    const storedDeposits = localStorage.getItem('nextwin_totalDeposits');
     const storedBets = localStorage.getItem('nextwin_bets');
     if (storedCapital) {
       const capital = parseFloat(storedCapital);
       setInitialCapital(capital);
       setCurrentBankroll(storedBankroll ? parseFloat(storedBankroll) : capital);
+      setTotalDeposits(storedDeposits ? parseFloat(storedDeposits) : 0);
     }
     if (storedBets) {
       setBets(JSON.parse(storedBets));
@@ -46,8 +52,22 @@ const BankrollPage: React.FC = () => {
   useEffect(() => {
     if (initialCapital !== null) localStorage.setItem('nextwin_initialCapital', initialCapital.toString());
     if (currentBankroll !== null) localStorage.setItem('nextwin_currentBankroll', currentBankroll.toString());
+    localStorage.setItem('nextwin_totalDeposits', totalDeposits.toString());
     localStorage.setItem('nextwin_bets', JSON.stringify(bets));
-  }, [initialCapital, currentBankroll, bets]);
+  }, [initialCapital, currentBankroll, totalDeposits, bets]);
+
+  // Suggested stake calculation (5% of current bankroll)
+  const suggestedStake = useMemo(() => {
+    if (currentBankroll === null) return 0;
+    return Math.floor(currentBankroll * 0.05 * 100) / 100;
+  }, [currentBankroll]);
+
+  // Pre-fill stake when current bankroll changes
+  useEffect(() => {
+      if (suggestedStake > 0 && !stake) {
+          setStake(suggestedStake.toString());
+      }
+  }, [suggestedStake]);
 
   const handleSetInitialCapital = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -56,6 +76,18 @@ const BankrollPage: React.FC = () => {
     if (!isNaN(capital) && capital > 0) {
       setInitialCapital(capital);
       setCurrentBankroll(capital);
+      setTotalDeposits(0);
+    }
+  };
+
+  const handleAddFunds = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(depositAmount);
+    if (!isNaN(amount) && amount > 0 && currentBankroll !== null) {
+      setCurrentBankroll(currentBankroll + amount);
+      setTotalDeposits(prev => prev + amount);
+      setDepositAmount('');
+      setShowDepositForm(false);
     }
   };
 
@@ -76,7 +108,7 @@ const BankrollPage: React.FC = () => {
       };
       setBets(prev => [newBet, ...prev]);
       setDescription('');
-      setStake('');
+      // Keep stake as suggested for next bet
       setOdds('');
     }
   };
@@ -101,19 +133,22 @@ const BankrollPage: React.FC = () => {
   const stats = useMemo(() => {
     if (initialCapital === null || currentBankroll === null) return { profit: 0, roi: 0, yield: 0, winrate: 0, avgOdds: 0 };
     
-    const profit = currentBankroll - initialCapital;
+    // Performance is calculated based on total investment (initial + deposits)
+    const totalInvestment = initialCapital + totalDeposits;
+    const profit = currentBankroll - totalInvestment;
+    
     const finishedBets = bets.filter(b => b.result !== 'pending');
     const totalStaked = finishedBets.reduce((sum, b) => sum + b.stake, 0);
     const wonBets = finishedBets.filter(b => b.result === 'win');
     
     return {
       profit,
-      roi: (profit / initialCapital) * 100,
+      roi: totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0,
       yield: totalStaked > 0 ? (profit / totalStaked) * 100 : 0,
       winrate: finishedBets.length > 0 ? (wonBets.length / finishedBets.length) * 100 : 0,
       avgOdds: bets.length > 0 ? bets.reduce((sum, b) => sum + b.odds, 0) / bets.length : 0
     };
-  }, [initialCapital, currentBankroll, bets]);
+  }, [initialCapital, currentBankroll, totalDeposits, bets]);
 
   if (initialCapital === null) {
     return (
@@ -124,7 +159,7 @@ const BankrollPage: React.FC = () => {
           <h1 className="text-3xl font-black text-white mb-4 tracking-tight">{t('bankroll_setup_title')}</h1>
           <p className="text-gray-400 mb-12 text-sm leading-relaxed font-medium">{t('bankroll_setup_subtitle')}</p>
           <form onSubmit={handleSetInitialCapital} className="space-y-8 text-left">
-            <Input id="capital" name="capital" label={t('bankroll_initial_capital')} type="number" step="0.01" placeholder="Ex: 1000" required />
+            <Input id="capital" name="capital" label={t('bankroll_initial_capital')} type="number" step="0.01" placeholder="Ex: 500" required />
             <Button type="submit" className="w-full py-6 text-xl font-black rounded-2xl shadow-2xl shadow-orange-500/30">
               {t('bankroll_start_tracking')}
             </Button>
@@ -135,15 +170,23 @@ const BankrollPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-12 max-w-7xl mx-auto px-4">
-      <div className="text-center">
+    <div className="space-y-12 max-w-7xl mx-auto px-4 pb-20">
+      <div className="text-center relative">
         <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tighter">
             {t('bankroll_title')}
         </h1>
         <div className="flex items-center justify-center gap-4">
             <span className="h-px w-12 bg-gray-800"></span>
-            <p className="text-gray-500 font-black uppercase tracking-[0.4em] text-[10px]">Système de gestion certifié NextWin</p>
+            <p className="text-gray-500 font-black uppercase tracking-[0.4em] text-[10px]">{t('bankroll_risk_title')}</p>
             <span className="h-px w-12 bg-gray-800"></span>
+        </div>
+        
+        {/* Risk Protocol Badge */}
+        <div className="mt-6 flex justify-center">
+            <div className="bg-orange-500/10 border border-orange-500/30 px-6 py-2 rounded-full flex items-center gap-3">
+                <span className="w-3 h-3 bg-orange-500 rounded-full animate-ping"></span>
+                <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Risk Management: 5% Active</span>
+            </div>
         </div>
       </div>
       
@@ -152,16 +195,16 @@ const BankrollPage: React.FC = () => {
         <StatCard 
             title={t('bankroll_current_bankroll')} 
             value={`${currentBankroll?.toFixed(2)}€`} 
-            subValue={`${initialCapital.toFixed(0)}€ au départ`}
+            subValue={`${(initialCapital + totalDeposits).toFixed(0)}€ investis total`}
             icon="🏦"
-            trend={stats.roi >= 0 ? `+${stats.roi.toFixed(1)}%` : `${stats.roi.toFixed(1)}%`}
+            trend={stats.roi >= 0 ? `+${stats.roi.toFixed(1)}% ROI` : `${stats.roi.toFixed(1)}% ROI`}
         />
         <StatCard 
             title={t('bankroll_profit_loss')} 
             value={`${stats.profit >= 0 ? '+' : ''}${stats.profit.toFixed(2)}€`} 
             color={stats.profit >= 0 ? 'text-green-400' : 'text-red-400'}
             icon="📈"
-            subValue="Profit Net Total"
+            subValue={t('bankroll_performance_bets')}
         />
         <StatCard 
             title={t('bankroll_yield')} 
@@ -181,96 +224,128 @@ const BankrollPage: React.FC = () => {
 
       <div className="grid lg:grid-cols-12 gap-8">
         {/* Form Column */}
-        <div className="lg:col-span-4">
-            <Card className="h-fit bg-[#1C1C2B] border-gray-800/60 rounded-[2.5rem] p-10 sticky top-24 shadow-3xl">
-                <h2 className="text-2xl font-black text-white mb-10 flex items-center gap-4">
-                    <span className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-sm shadow-2xl shadow-orange-500/40">✚</span> 
-                    {t('bankroll_add_bet')}
-                </h2>
-                <form onSubmit={handleAddBet} className="space-y-8">
-                    <Input id="description" label={t('bankroll_bet_description')} placeholder="Match, Tournoi..." value={description} onChange={e => setDescription(e.target.value)} required />
-                    <div className="grid grid-cols-2 gap-6">
+        <div className="lg:col-span-4 space-y-6">
+            <Card className="bg-[#1C1C2B] border-gray-800/60 rounded-[2.5rem] p-8 shadow-3xl">
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-xl font-black text-white flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center text-xs shadow-xl shadow-orange-500/40">✚</span> 
+                        {t('bankroll_add_bet')}
+                    </h2>
+                </div>
+                
+                {/* Risk Protocol Info */}
+                <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 mb-8">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">{t('bankroll_suggested_stake')}</p>
+                    <p className="text-2xl font-black text-white">{suggestedStake}€</p>
+                    <div className="w-full bg-orange-500/10 h-1 rounded-full mt-2">
+                        <div className="bg-orange-500 h-1 rounded-full" style={{ width: '5%' }}></div>
+                    </div>
+                </div>
+
+                <form onSubmit={handleAddBet} className="space-y-6">
+                    <Input id="description" label={t('bankroll_bet_description')} placeholder="Ex: Match Ligue 1" value={description} onChange={e => setDescription(e.target.value)} required />
+                    <div className="grid grid-cols-2 gap-4">
                         <Input id="stake" label={t('bankroll_stake')} type="number" step="0.01" value={stake} onChange={e => setStake(e.target.value)} required />
                         <Input id="odds" label={t('bankroll_odds')} type="number" step="0.01" value={odds} onChange={e => setOdds(e.target.value)} required />
                     </div>
-                    <Button type="submit" className="w-full py-5 font-black text-lg rounded-2xl shadow-2xl shadow-orange-500/30 transform active:scale-95 transition-all">
+                    <Button type="submit" className="w-full py-4 font-black text-sm rounded-xl shadow-2xl shadow-orange-500/20 uppercase tracking-widest">
                         {t('bankroll_add_button')}
                     </Button>
                 </form>
-                <div className="mt-10 pt-10 border-t border-gray-800/50 grid grid-cols-2 gap-4">
-                    <div>
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{t('bankroll_avg_odds')}</p>
-                        <p className="text-2xl font-black text-white">@{stats.avgOdds.toFixed(2)}</p>
+            </Card>
+
+            {/* Add Funds Feature */}
+            <Card className="bg-[#1C1C2B] border-gray-800/60 rounded-[2.5rem] p-8">
+                <button 
+                    onClick={() => setShowDepositForm(!showDepositForm)}
+                    className="w-full flex items-center justify-between group"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className="text-xl">💳</span>
+                        <span className="font-black text-white uppercase text-xs tracking-widest">{t('bankroll_add_funds')}</span>
                     </div>
-                     <div>
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Mise Moy.</p>
-                        <p className="text-2xl font-black text-white">{(bets.length > 0 ? bets.reduce((s, b) => s + b.stake, 0) / bets.length : 0).toFixed(0)}€</p>
-                    </div>
-                </div>
+                    <svg className={`w-5 h-5 text-gray-500 transition-transform ${showDepositForm ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                
+                {showDepositForm && (
+                    <form onSubmit={handleAddFunds} className="mt-6 pt-6 border-t border-gray-800 space-y-4">
+                        <Input 
+                            id="deposit" 
+                            label={t('bankroll_deposit_amount')} 
+                            type="number" 
+                            value={depositAmount} 
+                            onChange={e => setDepositAmount(e.target.value)} 
+                            placeholder="Ex: 200"
+                            required 
+                        />
+                        <Button type="submit" variant="secondary" className="w-full py-3 text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 border border-white/10">
+                            {t('bankroll_add_funds')}
+                        </Button>
+                    </form>
+                )}
             </Card>
         </div>
 
         {/* History Column */}
         <div className="lg:col-span-8">
-            <Card className="bg-[#1C1C2B] border-gray-800/60 rounded-[2.5rem] p-10 shadow-3xl relative">
-                <div className="flex justify-between items-center mb-10">
-                    <h2 className="text-2xl font-black text-white flex items-center gap-3">
+            <Card className="bg-[#1C1C2B] border-gray-800/60 rounded-[2.5rem] p-8 shadow-3xl">
+                <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-xl font-black text-white flex items-center gap-3">
                         {t('bankroll_history')}
                     </h2>
-                    <span className="px-4 py-1.5 bg-gray-900/80 rounded-full text-[10px] uppercase tracking-widest text-gray-400 font-black border border-gray-800">
+                    <span className="px-3 py-1 bg-gray-900/80 rounded-full text-[9px] uppercase tracking-widest text-gray-500 font-black border border-gray-800">
                         {bets.length} Événements
                     </span>
                 </div>
 
                 <div className="space-y-4">
                     {bets.length > 0 ? bets.map(bet => (
-                        <div key={bet.id} className="bg-gray-900/30 p-6 rounded-3xl border border-gray-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-6 group hover:border-orange-500/40 transition-all duration-300">
-                            <div className="flex gap-5 items-center">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${bet.result === 'win' ? 'bg-green-500/10 text-green-400' : bet.result === 'loss' ? 'bg-red-500/10 text-red-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                        <div key={bet.id} className="bg-gray-900/30 p-5 rounded-2xl border border-gray-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-6 group hover:border-orange-500/40 transition-all">
+                            <div className="flex gap-4 items-center">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-inner ${bet.result === 'win' ? 'bg-green-500/10 text-green-400' : bet.result === 'loss' ? 'bg-red-500/10 text-red-400' : 'bg-orange-500/10 text-orange-400'}`}>
                                     {bet.result === 'win' ? '✓' : bet.result === 'loss' ? '✕' : '⏳'}
                                 </div>
                                 <div>
-                                    <p className="font-black text-white text-xl group-hover:text-orange-400 transition-colors tracking-tight leading-tight">{bet.description}</p>
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{bet.date}</span>
+                                    <p className="font-black text-white text-lg group-hover:text-orange-400 transition-colors tracking-tight leading-tight">{bet.description}</p>
+                                    <div className="flex items-center gap-3 mt-1.5">
+                                        <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">{bet.date}</span>
                                         <span className="w-1 h-1 bg-gray-700 rounded-full"></span>
-                                        <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">{bet.stake}€ misez à @{bet.odds.toFixed(2)}</span>
+                                        <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest">{bet.stake}€ à @{bet.odds.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div className="flex items-center justify-between sm:justify-end gap-10 border-t sm:border-t-0 pt-4 sm:pt-0 border-gray-800/50">
+                            <div className="flex items-center justify-between sm:justify-end gap-8 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-800/50">
                                 {bet.result === 'pending' ? (
                                     <div className="flex gap-2">
                                         <button 
                                             onClick={() => handleUpdateBetResult(bet.id, 'win')} 
-                                            className="bg-green-600/10 text-green-500 border border-green-500/20 hover:bg-green-600 hover:text-white w-12 h-12 rounded-2xl text-xs font-black transition-all flex items-center justify-center shadow-2xl hover:shadow-green-500/20"
+                                            className="bg-green-600/10 text-green-500 border border-green-500/20 hover:bg-green-600 hover:text-white w-10 h-10 rounded-xl text-[10px] font-black transition-all flex items-center justify-center"
                                         >V</button>
                                         <button 
                                             onClick={() => handleUpdateBetResult(bet.id, 'loss')} 
-                                            className="bg-red-600/10 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white w-12 h-12 rounded-2xl text-xs font-black transition-all flex items-center justify-center shadow-2xl hover:shadow-red-500/20"
+                                            className="bg-red-600/10 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white w-10 h-10 rounded-xl text-[10px] font-black transition-all flex items-center justify-center"
                                         >D</button>
                                     </div>
                                 ) : (
                                     <div className="text-right">
-                                        <p className={`font-black text-2xl tracking-tighter ${bet.result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
+                                        <p className={`font-black text-xl tracking-tighter ${bet.result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
                                             {bet.profitOrLoss > 0 ? '+' : ''}{bet.profitOrLoss.toFixed(2)}€
                                         </p>
-                                        <p className={`text-[10px] uppercase font-black tracking-[0.3em] mt-1 ${bet.result === 'win' ? 'text-green-500/40' : 'text-red-500/40'}`}>
+                                        <p className={`text-[9px] uppercase font-black tracking-widest mt-0.5 ${bet.result === 'win' ? 'text-green-500/40' : 'text-red-500/40'}`}>
                                             {bet.result === 'win' ? t('bankroll_bet_won') : t('bankroll_bet_lost')}
                                         </p>
                                     </div>
                                 )}
-                                <button onClick={() => handleDeleteBet(bet.id)} className="text-gray-800 hover:text-red-500 transition-colors p-3 hover:bg-red-500/5 rounded-xl">
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                <button onClick={() => handleDeleteBet(bet.id)} className="text-gray-800 hover:text-red-500 transition-colors p-2 rounded-lg">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                 </button>
                             </div>
                         </div>
                     )) : (
-                        <div className="flex flex-col items-center justify-center py-32 text-gray-700">
-                            <div className="text-8xl mb-8 grayscale opacity-20">📊</div>
-                            <p className="text-xl font-black uppercase tracking-widest text-gray-600">{t('bankroll_no_bets')}</p>
-                            <p className="text-sm mt-4 font-medium max-w-xs text-center leading-relaxed">Commencez à saisir vos paris pour débloquer l'analyse de performance algorithmique.</p>
+                        <div className="flex flex-col items-center justify-center py-24 text-gray-700">
+                            <div className="text-6xl mb-6 grayscale opacity-20">📊</div>
+                            <p className="text-sm font-black uppercase tracking-widest text-gray-600">{t('bankroll_no_bets')}</p>
                         </div>
                     )}
                 </div>
