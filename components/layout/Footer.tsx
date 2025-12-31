@@ -67,7 +67,7 @@ const Footer: React.FC = () => {
             </p>
           </div>
           <div className="text-sm">
-            &copy; 2025 NextWin.
+            &copy; 2026 NextWin.
           </div>
         </div>
       </div>
