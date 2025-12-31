@@ -23,13 +23,14 @@ const DailyPicksPage: React.FC = () => {
         if (data && data.length > 0) {
             setPicks(data);
         } else {
-            setError("L'IA n'a pas pu identifier de matchs réels à cet instant. Réessayez.");
+            setError("L'IA n'a pas renvoyé de résultats. Veuillez réessayer dans quelques instants.");
         }
     } catch (e: any) {
-        if (e.message === "API_KEY_MISSING") {
-            setError("Clé API manquante : Configurez 'API_KEY' dans vos Secrets GitHub Actions.");
+        console.error("Fetch Error:", e);
+        if (e.message === "API_KEY_INVALID") {
+            setError("CONFIG_ERROR : La clé API est manquante ou invalide dans vos Secrets GitHub.");
         } else {
-            setError("Erreur de connexion aux services IA.");
+            setError("Erreur de connexion : Impossible de joindre le serveur IA (Vérifiez votre clé API).");
         }
     } finally {
         setIsLoading(false);
@@ -68,7 +69,7 @@ const DailyPicksPage: React.FC = () => {
           <Spinner />
           <div className="text-center space-y-2">
             <p className="text-orange-400 font-bold text-lg animate-pulse tracking-wide">{t('daily_picks_loading')}</p>
-            <p className="text-gray-600 text-[10px] uppercase font-black tracking-widest">Recherche en cours via Google Search...</p>
+            <p className="text-gray-600 text-[10px] uppercase font-black tracking-widest">Analyse en temps réel via Google Search...</p>
           </div>
         </div>
       ) : filteredPicks.length > 0 ? (
@@ -82,9 +83,11 @@ const DailyPicksPage: React.FC = () => {
             <Card className="text-center py-16 px-8 text-gray-500 rounded-[2.5rem] border-gray-800/40 bg-[#1C1C2B] shadow-2xl">
                 <div className="text-6xl mb-6 opacity-40 grayscale animate-bounce">📡</div>
                 <h3 className="text-white font-black text-xl mb-4">Moteur en attente</h3>
-                <p className="text-sm mb-8 text-gray-400 leading-relaxed">{error}</p>
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-8">
+                    <p className="text-xs text-red-400 leading-relaxed font-medium">{error}</p>
+                </div>
                 <Button onClick={fetchPicks} className="w-full py-4 text-xs font-black uppercase tracking-widest">
-                    ACTUALISER LE MOTEUR
+                    RECHARGER LE MOTEUR
                 </Button>
             </Card>
         </div>
