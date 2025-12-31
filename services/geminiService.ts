@@ -3,61 +3,79 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Extraction robuste du JSON pour éviter les textes parasites de l'IA
+ * Extrait le JSON de manière ultra-robuste, même si l'IA ajoute du texte autour ou des balises markdown.
  */
 const extractJson = (text: string) => {
     try {
-        const firstBracket = text.indexOf('{');
-        const lastBracket = text.lastIndexOf('}');
+        // Supprime les balises markdown json si présentes
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const firstBracket = cleanText.indexOf('{');
+        const lastBracket = cleanText.lastIndexOf('}');
         
         if (firstBracket !== -1 && lastBracket !== -1) {
-            const jsonString = text.substring(firstBracket, lastBracket + 1);
+            const jsonString = cleanText.substring(firstBracket, lastBracket + 1);
             return JSON.parse(jsonString);
         }
     } catch (e) {
-        console.error("Erreur de parsing JSON IA:", e, "Texte brut reçu:", text);
+        console.error("Erreur critique de parsing JSON IA:", e, "Texte reçu:", text);
     }
     return null;
 };
 
 const getAIInstance = () => {
-    // Vite remplace cette chaîne lors du build GitHub Actions
-    // @ts-ignore
+    // Vite remplace process.env.API_KEY lors du build GitHub Actions.
+    // On récupère la valeur brute injectée.
     const apiKey = process.env.API_KEY;
     
-    // Vérification stricte de la présence de la clé
+    // Si la clé est absente ou n'a pas été remplacée (cas local sans env)
     if (!apiKey || apiKey === "" || apiKey === "process.env.API_KEY" || apiKey === "undefined") {
-        console.error("ERREUR CRITIQUE : La clé API Gemini n'est pas injectée dans le build.");
+        console.error("ERREUR : Clé API non détectée. Vérifiez vos Secrets GitHub (API_KEY).");
         return null;
     }
     return new GoogleGenAI({ apiKey });
 };
 
+/**
+ * Récupère les 9 pronostics du jour (3 par sport) basés sur des matchs RÉELS.
+ */
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
     const ai = getAIInstance();
     if (!ai) throw new Error("API_KEY_MISSING");
 
-    const today = new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+    // Calcul de la date actuelle à Paris pour le prompt
+    const nowInParis = new Intl.DateTimeFormat('fr-FR', {
+        timeZone: 'Europe/Paris',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(new Date());
 
     try {
-        // Utilisation de gemini-3-pro-preview pour une meilleure fiabilité avec l'outil de recherche
-        const prompt = `Consulte Google Search pour trouver 9 matchs de sport RÉELS prévus spécifiquement le ${today} (ou le lendemain si l'heure est tardive).
-        Répartition : 3 Football (Ligue 1, PL, Liga, etc.), 3 Basketball (NBA, Euroleague), 3 Tennis (ATP/WTA).
+        const prompt = `Utilise Google Search pour trouver 9 matchs de sport RÉELS prévus pour aujourd'hui ou demain (date de référence actuelle à Paris : ${nowInParis}).
+        Répartition impérative : 3 Football, 3 Basketball, 3 Tennis.
         
-        IMPORTANT : Toutes les heures doivent être au format HEURE DE PARIS (France).
-        
+        Pour chaque match, tu dois fournir :
+        - Le nom exact du match (Equipe A vs Equipe B)
+        - Le type de pari (ex: Victoire Equipe A, Plus de 2.5 buts, etc.)
+        - La probabilité de réussite (ex: 78%)
+        - Une analyse courte (2 phrases)
+        - La confiance (High ou Very High)
+        - La date et l'heure EXACTE DE PARIS.
+
         Réponds UNIQUEMENT avec cet objet JSON :
         {
           "picks": [
             {
               "sport": "football",
-              "match": "Équipe A vs Équipe B",
-              "betType": "Victoire Équipe A",
-              "probability": "78%",
-              "analysis": "Analyse courte basée sur les dernières compos...",
-              "confidence": "Very High",
-              "matchDate": "${today}",
-              "matchTime": "21:00"
+              "match": "Nom du Match",
+              "betType": "Type de Pari",
+              "probability": "00%",
+              "analysis": "Analyse...",
+              "confidence": "High",
+              "matchDate": "JJ/MM",
+              "matchTime": "HH:MM"
             }
           ]
         }`;
@@ -67,9 +85,7 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: `Tu es l'expert analyste de NextWin. Ton sérieux dépend de la réalité des matchs. 
-                Utilise exclusivement l'heure de Paris (France). Ne propose que des matchs dont tu peux vérifier l'existence aujourd'hui via Google Search. 
-                Réponds en JSON pur sans texte avant ou après.`
+                systemInstruction: "Tu es l'analyste expert de NextWin. Ton sérieux dépend de la véracité des matchs. Utilise Google Search pour vérifier les horaires réels à Paris. Réponds exclusivement en JSON pur."
             }
         });
 
@@ -78,33 +94,35 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
             return result.picks;
         }
         
-        console.warn("L'IA a retourné un format JSON invalide ou vide.");
         return [];
     } catch (error) {
-        console.error("Erreur lors de la récupération des pronostics:", error);
+        console.error("Erreur DailyPicks:", error);
         throw error;
     }
 };
 
+/**
+ * Analyse approfondie d'un match spécifique via recherche web.
+ */
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
     const ai = getAIInstance();
     if (!ai) throw new Error("API_KEY_MISSING");
 
-    const today = new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+    const nowInParis = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris' }).format(new Date());
 
     try {
-        const prompt = `Effectue une recherche approfondie sur Google pour le match : ${request.match} (${request.betType}). 
-        Vérifie : les compositions probables, les blessés de dernière minute, et les conditions météo pour le ${today}.
+        const prompt = `Analyse expert via Google Search pour le match : ${request.match} (${request.betType}).
+        Vérifie les compositions, blessures et dynamiques réelles pour la date du ${nowInParis}.
         
-        IMPORTANT : Utilise l'HEURE DE PARIS (France) pour la date et l'heure.
+        Toutes les heures citées doivent être à l'heure de PARIS.
         
         Réponds UNIQUEMENT en JSON :
         {
-          "detailedAnalysis": "Analyse technique approfondie...",
-          "successProbability": "72%",
-          "riskAssessment": "Medium",
-          "aiOpinion": "Résumé stratégique pour le parieur...",
-          "matchDate": "Date du match",
+          "detailedAnalysis": "Analyse technique exhaustive...",
+          "successProbability": "00%",
+          "riskAssessment": "Low/Medium/High",
+          "aiOpinion": "Conseil stratégique final...",
+          "matchDate": "Date réelle",
           "matchTime": "Heure de Paris"
         }`;
 
@@ -113,7 +131,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Tu es un analyste sportif professionnel. Tu bases tes rapports sur des faits réels vérifiés par recherche web. Heure de Paris obligatoire. Format JSON pur."
+                systemInstruction: "Tu es un analyste pro. Utilise Google Search pour obtenir des données factuelles et récentes. Heure de Paris obligatoire. Format JSON pur."
             }
         });
 
@@ -123,16 +141,16 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
             .map((c: any) => ({ title: c.web.title || 'Source Web', uri: c.web.uri }));
 
         return {
-            detailedAnalysis: result?.detailedAnalysis || "Analyse technique indisponible pour le moment.",
-            successProbability: result?.successProbability || "0%",
+            detailedAnalysis: result?.detailedAnalysis || "L'IA n'a pas pu générer une analyse détaillée.",
+            successProbability: result?.successProbability || "50%",
             riskAssessment: result?.riskAssessment || "High",
-            aiOpinion: result?.aiOpinion || "L'IA n'a pas pu émettre d'avis précis.",
-            matchDate: result?.matchDate || today,
-            matchTime: result?.matchTime || "--:--",
+            aiOpinion: result?.aiOpinion || "Données insuffisantes pour un avis tranché.",
+            matchDate: result?.matchDate || "N/A",
+            matchTime: result?.matchTime || "N/A",
             sources
         };
     } catch (error) {
-        console.error("Erreur lors de l'analyse du match:", error);
+        console.error("Erreur BetAnalysis:", error);
         throw error;
     }
 };
