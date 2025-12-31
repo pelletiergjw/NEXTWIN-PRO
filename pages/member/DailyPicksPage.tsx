@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -23,10 +22,11 @@ const DailyPicksPage: React.FC = () => {
         if (data && data.length > 0) {
             setPicks(data);
         } else {
-            setError("INDISPONIBILITÉ_DATA");
+            setError("Aucune donnée reçue de l'IA.");
         }
     } catch (e: any) {
-        setError(e.message === "MOTEUR_INDISPONIBLE" ? "Moteur de recherche saturé ou clé API invalide." : "Une erreur technique est survenue.");
+        console.error("DailyPicks Page Error:", e);
+        setError("Erreur de connexion au moteur IA. Vérifiez la clé API dans les secrets GitHub.");
     } finally {
         setIsLoading(false);
     }
@@ -36,13 +36,13 @@ const DailyPicksPage: React.FC = () => {
     fetchPicks();
   }, [language]);
 
-  const filteredPicks = activeTab === 'all' ? picks : picks.filter(p => p.sport.toLowerCase() === activeTab);
+  const filteredPicks = activeTab === 'all' ? picks : picks.filter(p => p.sport.toLowerCase().includes(activeTab));
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
       <div className="text-center mb-12">
         <div className="inline-block px-4 py-1.5 mb-6 bg-orange-500/10 border border-orange-500/20 rounded-full">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">NEXTWIN ALGO V5.0 - TEMPS RÉEL</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">NEXTWIN ALGO V5.1 - STABLE</span>
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
           {t('daily_picks_title')}
@@ -60,23 +60,24 @@ const DailyPicksPage: React.FC = () => {
         <div className="flex flex-col items-center justify-center py-24 gap-8">
           <Spinner />
           <div className="text-center space-y-2">
-            <p className="text-orange-400 font-bold animate-pulse uppercase tracking-widest text-sm">Synchronisation des sources mondiales...</p>
+            <p className="text-orange-400 font-bold animate-pulse uppercase tracking-widest text-sm">Initialisation du moteur IA...</p>
             <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.4em]">Protocole Sécurisé NextWin</p>
           </div>
         </div>
       ) : error ? (
         <div className="max-w-lg mx-auto">
             <Card className="text-center py-16 px-8 rounded-[2.5rem] border-red-500/20 bg-[#151522] shadow-2xl">
-                <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl">📡</div>
-                <h3 className="text-white font-black text-xl mb-4">Moteur en Maintenance</h3>
+                <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl">⚠️</div>
+                <h3 className="text-white font-black text-xl mb-4">Erreur de Protocole</h3>
                 <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-                    Le moteur d'analyse rencontre une surcharge ou la clé API est mal configurée.
+                    {error}
                 </p>
-                <div className="bg-black/40 p-3 rounded-xl mb-8 border border-white/5">
-                    <p className="text-[10px] text-red-400 font-black uppercase tracking-widest">{error}</p>
+                <div className="bg-black/40 p-4 rounded-xl mb-8 border border-white/5 text-left">
+                    <p className="text-[9px] text-gray-500 font-bold uppercase mb-2">Diagnostic technique :</p>
+                    <p className="text-[10px] text-red-400 font-mono break-all">Vérifiez que "API_KEY" est bien défini dans les Secrets GitHub de votre dépôt.</p>
                 </div>
                 <Button onClick={fetchPicks} className="w-full py-4 uppercase font-black tracking-widest shadow-xl shadow-orange-500/20">
-                    Relancer le protocole
+                    Relancer l'IA
                 </Button>
             </Card>
         </div>
@@ -111,13 +112,13 @@ const PickCard: React.FC<{ pick: DailyPick }> = ({ pick }) => {
       <p className="text-orange-400 font-bold text-sm mb-6 uppercase tracking-wide">{pick.betType}</p>
       <div className="mb-8">
         <div className="flex justify-between items-end mb-2">
-          <span className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Confiance IA</span>
+          <span className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Indice IA</span>
           <span className="text-lg font-black text-white">{pick.probability}</span>
         </div>
         <ProbabilityGauge probability={probValue} />
       </div>
       <div className="mt-auto pt-4 border-t border-gray-800/60">
-        <p className="text-gray-400 text-xs italic font-medium leading-relaxed line-clamp-2">"{pick.analysis}"</p>
+        <p className="text-gray-400 text-xs italic font-medium leading-relaxed line-clamp-3">"{pick.analysis}"</p>
       </div>
     </Card>
   );
