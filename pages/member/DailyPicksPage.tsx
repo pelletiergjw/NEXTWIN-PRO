@@ -23,18 +23,10 @@ const DailyPicksPage: React.FC = () => {
         if (data && data.length > 0) {
             setPicks(data);
         } else {
-            setError("Aucune sélection n'a pu être générée. Vérifiez votre quota d'API.");
+            setError("INDISPONIBILITÉ_DATA");
         }
     } catch (e: any) {
-        console.error("Fetch Picks Error:", e);
-        const msg = e.message || "";
-        if (msg.includes("MISSING_IN_BUILD")) {
-            setError("ERREUR BUILD : La clé API n'a pas été injectée. Vérifiez vos Secrets GitHub.");
-        } else if (msg.includes("403")) {
-            setError("ERREUR CLÉ : Votre clé API Google Gemini est invalide ou restreinte.");
-        } else {
-            setError(`ERREUR RÉSEAU : ${msg || "Échec de connexion au moteur Gemini."}`);
-        }
+        setError(e.message === "MOTEUR_INDISPONIBLE" ? "Moteur de recherche saturé ou clé API invalide." : "Une erreur technique est survenue.");
     } finally {
         setIsLoading(false);
     }
@@ -50,7 +42,7 @@ const DailyPicksPage: React.FC = () => {
     <div className="max-w-6xl mx-auto py-6 px-4">
       <div className="text-center mb-12">
         <div className="inline-block px-4 py-1.5 mb-6 bg-orange-500/10 border border-orange-500/20 rounded-full">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">9 SÉLECTIONS EXCLUSIVES IA</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">NEXTWIN ALGO V5.0 - TEMPS RÉEL</span>
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
           {t('daily_picks_title')}
@@ -68,30 +60,31 @@ const DailyPicksPage: React.FC = () => {
         <div className="flex flex-col items-center justify-center py-24 gap-8">
           <Spinner />
           <div className="text-center space-y-2">
-            <p className="text-orange-400 font-bold animate-pulse uppercase tracking-widest text-sm">Calcul des opportunités par IA...</p>
-            <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.4em]">Moteur NextWin v4.1</p>
+            <p className="text-orange-400 font-bold animate-pulse uppercase tracking-widest text-sm">Synchronisation des sources mondiales...</p>
+            <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.4em]">Protocole Sécurisé NextWin</p>
           </div>
         </div>
-      ) : filteredPicks.length > 0 ? (
+      ) : error ? (
+        <div className="max-w-lg mx-auto">
+            <Card className="text-center py-16 px-8 rounded-[2.5rem] border-red-500/20 bg-[#151522] shadow-2xl">
+                <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl">📡</div>
+                <h3 className="text-white font-black text-xl mb-4">Moteur en Maintenance</h3>
+                <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                    Le moteur d'analyse rencontre une surcharge ou la clé API est mal configurée.
+                </p>
+                <div className="bg-black/40 p-3 rounded-xl mb-8 border border-white/5">
+                    <p className="text-[10px] text-red-400 font-black uppercase tracking-widest">{error}</p>
+                </div>
+                <Button onClick={fetchPicks} className="w-full py-4 uppercase font-black tracking-widest shadow-xl shadow-orange-500/20">
+                    Relancer le protocole
+                </Button>
+            </Card>
+        </div>
+      ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fadeIn">
           {filteredPicks.map((pick, idx) => (
             <PickCard key={idx} pick={pick} />
           ))}
-        </div>
-      ) : (
-        <div className="max-w-lg mx-auto">
-            <Card className="text-center py-16 px-8 rounded-[2.5rem] border-red-500/20 bg-[#151522] shadow-2xl">
-                <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl">📡</div>
-                <h3 className="text-white font-black text-xl mb-4">Flux Interrompu</h3>
-                <div className="bg-black/40 p-5 rounded-2xl border border-white/5 mb-8">
-                    <p className="text-[11px] text-red-400 font-bold uppercase tracking-widest text-center">
-                        {error}
-                    </p>
-                </div>
-                <Button onClick={fetchPicks} className="w-full py-4 uppercase font-black tracking-widest shadow-xl shadow-orange-500/20">
-                    Redémarrer le moteur
-                </Button>
-            </Card>
         </div>
       )}
     </div>
@@ -112,7 +105,7 @@ const PickCard: React.FC<{ pick: DailyPick }> = ({ pick }) => {
         <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20">
           {pick.matchDate} - {pick.matchTime}
         </span>
-        <span className="text-2xl group-hover:scale-110 transition-transform">{pick.sport === 'football' ? '⚽' : pick.sport === 'basketball' ? '🏀' : '🎾'}</span>
+        <span className="text-2xl group-hover:scale-110 transition-transform">{pick.sport.toLowerCase().includes('foot') ? '⚽' : pick.sport.toLowerCase().includes('basket') ? '🏀' : '🎾'}</span>
       </div>
       <h3 className="text-xl font-black text-white mb-1 leading-tight group-hover:text-orange-400 transition-colors">{pick.match}</h3>
       <p className="text-orange-400 font-bold text-sm mb-6 uppercase tracking-wide">{pick.betType}</p>
