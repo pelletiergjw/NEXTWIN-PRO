@@ -3,33 +3,36 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Service NextWin AI - Version Pro Optimisée
+ * Service NextWin AI - Version Production Vercel
+ * Optimisé pour répondre en moins de 10 secondes.
  */
 
-/**
- * Robustly extracts JSON from a string that might contain markdown or additional text.
- * Essential when using search tools which can pollute the response.
- */
 const extractJsonFromText = (text: string) => {
-    try {
-        // Try simple parse first
-        return JSON.parse(text);
-    } catch (e) {
-        // Find the first '{' and the last '}' to isolate JSON block
-        const start = text.indexOf('{');
-        const end = text.lastIndexOf('}');
-        
-        if (start !== -1 && end !== -1) {
-            const jsonCandidate = text.substring(start, end + 1);
+    if (!text) throw new Error("Réponse vide de l'IA");
+    
+    // Nettoyage des caractères de contrôle et espaces inutiles
+    const sanitized = text.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").trim();
+    
+    // Extraction du bloc JSON entre les premières et dernières accolades
+    const start = sanitized.indexOf('{');
+    const end = sanitized.lastIndexOf('}');
+    
+    if (start !== -1 && end !== -1) {
+        const jsonCandidate = sanitized.substring(start, end + 1);
+        try {
+            return JSON.parse(jsonCandidate);
+        } catch (e) {
+            // Tentative de réparation si virgule traînante
             try {
-                return JSON.parse(jsonCandidate);
+                const repaired = jsonCandidate.replace(/,\s*([\]}])/g, '$1');
+                return JSON.parse(repaired);
             } catch (innerError) {
-                console.error("Failed to parse extracted JSON block:", jsonCandidate);
-                throw new Error("Format JSON invalide");
+                console.error("JSON Error:", jsonCandidate);
+                throw new Error("Format de données invalide");
             }
         }
-        throw new Error("Aucun bloc JSON détecté dans la réponse de l'IA");
     }
+    throw new Error("L'IA n'a pas renvoyé de résultats structurés");
 };
 
 const getParisTimeContext = () => {
@@ -50,16 +53,14 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
 
   const prompt = `NextWin Engine. Time: ${timeContext}.
   Find 9 REAL upcoming professional matches for next 48h (3 Football, 3 Basketball, 3 Tennis).
-  Respond ONLY with a JSON object: {"picks": [{"sport": "football", "match": "Team A vs Team B", "betType": "...", "probability": "75%", "analysis": "...", "confidence": "High", "matchDate": "...", "matchTime": "..."}]}.
-  All times in Paris Time. Language: ${langName}.`;
+  Respond ONLY with JSON: {"picks": [{"sport": "football", "match": "Team A vs Team B", "betType": "...", "probability": "75%", "analysis": "...", "confidence": "High", "matchDate": "...", "matchTime": "..."}]}.
+  Language: ${langName}.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }]
-      }
+      config: { tools: [{ googleSearch: {} }] }
     });
 
     const result = extractJsonFromText(response.text || "{}");
@@ -77,54 +78,45 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   const timeContext = getParisTimeContext();
   const langName = language === 'fr' ? 'Français' : 'English';
 
-  // Using a single string prompt for max reliability with search
-  const prompt = `Tu es l'expert analyste NextWin PRO. Heure Paris : ${timeContext}.
+  // Utilisation de Flash pour éviter le timeout Vercel (10s)
+  const prompt = `Expert NextWin PRO. Heure Paris : ${timeContext}.
+  MATCH : ${request.match} (${request.sport}). TYPE : ${request.betType}.
   
-  ANALYSE CE MATCH : ${request.match} (${request.sport})
-  TYPE DE PARI : ${request.betType}
-  
-  MISSIONS :
-  1. Trouve la date et l'heure EXACTES du match via recherche web.
-  2. Vérifie les effectifs 2024/2025, blessures et forme récente.
-  3. Calcule la probabilité mathématique de succès.
-  
-  RÉPONDS EXCLUSIVEMENT AU FORMAT JSON SUIVANT (en ${langName}) :
+  TACHE :
+  1. Trouve la date/heure exacte du match via Web.
+  2. Analyse la forme 2024/2025.
+  3. Réponds UNIQUEMENT en JSON (${langName}) :
   {
-    "detailedAnalysis": "Analyse tactique approfondie...",
+    "detailedAnalysis": "...",
     "successProbability": "XX%",
-    "riskAssessment": "Low" | "Medium" | "High",
+    "riskAssessment": "Low"|"Medium"|"High",
     "matchDate": "JJ/MM/AAAA",
     "matchTime": "HH:MM",
-    "aiOpinion": "Verdict final concis"
-  }
-  
-  Important : Ne réponds RIEN d'autre que le JSON.`;
+    "aiOpinion": "..."
+  }`;
 
   try {
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview', 
+        model: 'gemini-3-flash-preview', 
         contents: prompt,
         config: {
-            tools: [{ googleSearch: {} }],
-            // Removed responseMimeType and schema to avoid conflicts with Search grounding
-            thinkingConfig: { thinkingBudget: 15000 }
+            tools: [{ googleSearch: {} }]
+            // Pas de thinkingBudget ici pour garantir une réponse < 10s
         }
     });
     
     const result = extractJsonFromText(response.text || "{}");
-    
-    // Extract sources from grounding metadata
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const sources: GroundingSource[] = groundingChunks 
         ? groundingChunks.map((chunk: any) => ({
-            title: chunk.web?.title || 'Data Source',
+            title: chunk.web?.title || 'Source Web',
             uri: chunk.web?.uri || '#'
-          })).filter((s: any) => s.uri && s.uri !== '#')
+          })).filter((s: any) => s.uri !== '#')
         : [];
 
     return { ...result, sources };
   } catch (error) {
-    console.error("Detailed Analysis Error:", error);
+    console.error("Analysis Error:", error);
     throw error;
   }
 };
@@ -134,8 +126,8 @@ export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'd
   
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const visualPrompt = style === 'dashboard' 
-    ? `Pro sports analytics dashboard for ${request.match} (${request.sport}). High-tech UI, statistics, dark mode, orange neon theme.`
-    : `Top-down tactical overview of ${request.match} (${request.sport}). Neon arrows, player heatmaps, glowing pitch zones.`;
+    ? `Sports analytics dashboard for ${request.match}, high-tech, orange neon.`
+    : `Tactical view of ${request.match}, neon heatmaps on pitch.`;
 
   try {
     const response = await ai.models.generateContent({
