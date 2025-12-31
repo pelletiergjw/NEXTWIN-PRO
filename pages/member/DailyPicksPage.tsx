@@ -23,13 +23,13 @@ const DailyPicksPage: React.FC = () => {
         if (data && data.length > 0) {
             setPicks(data);
         } else {
-            setError("Le moteur de recherche n'a pas trouvé assez de matchs réels à cette heure-ci. Réessayez dans quelques minutes.");
+            setError("L'IA n'a pas pu identifier de matchs réels à cet instant. Réessayez.");
         }
     } catch (e: any) {
         if (e.message === "API_KEY_MISSING") {
-            setError("Configuration manquante : Clé API non détectée sur le serveur GitHub.");
+            setError("Clé API manquante : Configurez 'API_KEY' dans vos Secrets GitHub Actions.");
         } else {
-            setError("Erreur technique de connexion au moteur de recherche sportif.");
+            setError("Erreur de connexion aux services IA.");
         }
     } finally {
         setIsLoading(false);
@@ -46,13 +46,13 @@ const DailyPicksPage: React.FC = () => {
     <div className="max-w-6xl mx-auto py-6 px-4">
       <div className="text-center mb-12">
         <div className="inline-block px-4 py-1.5 mb-6 bg-orange-500/10 border border-orange-500/20 rounded-full">
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">9 SÉLECTIONS EXCLUSIVES IA • TEMPS RÉEL</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">9 SÉLECTIONS EXCLUSIVES IA</span>
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
           {t('daily_picks_title')}
         </h1>
         <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-          Matchs identifiés via <span className="text-white font-bold">Google Search</span> à l'heure de Paris.
+          {t('daily_picks_subtitle')}
         </p>
       </div>
 
@@ -67,8 +67,8 @@ const DailyPicksPage: React.FC = () => {
         <div className="flex flex-col items-center justify-center py-24 gap-8">
           <Spinner />
           <div className="text-center space-y-2">
-            <p className="text-orange-400 font-bold text-lg animate-pulse tracking-wide">Consultation des sources réelles...</p>
-            <p className="text-gray-600 text-[10px] uppercase font-black tracking-widest">Sourcing en cours via Google Search API</p>
+            <p className="text-orange-400 font-bold text-lg animate-pulse tracking-wide">{t('daily_picks_loading')}</p>
+            <p className="text-gray-600 text-[10px] uppercase font-black tracking-widest">Recherche en cours via Google Search...</p>
           </div>
         </div>
       ) : filteredPicks.length > 0 ? (
@@ -81,10 +81,10 @@ const DailyPicksPage: React.FC = () => {
         <div className="max-w-md mx-auto">
             <Card className="text-center py-16 px-8 text-gray-500 rounded-[2.5rem] border-gray-800/40 bg-[#1C1C2B] shadow-2xl">
                 <div className="text-6xl mb-6 opacity-40 grayscale animate-bounce">📡</div>
-                <h3 className="text-white font-black text-xl mb-4">Signal Interrompu</h3>
-                <p className="text-sm mb-8 text-gray-400 leading-relaxed font-medium">{error}</p>
+                <h3 className="text-white font-black text-xl mb-4">Moteur en attente</h3>
+                <p className="text-sm mb-8 text-gray-400 leading-relaxed">{error}</p>
                 <Button onClick={fetchPicks} className="w-full py-4 text-xs font-black uppercase tracking-widest">
-                    RESCANNER LES MATCHS
+                    ACTUALISER LE MOTEUR
                 </Button>
             </Card>
         </div>
@@ -116,7 +116,7 @@ const PickCard: React.FC<{ pick: DailyPick }> = ({ pick }) => {
             <span className="text-sm">📅</span>
             <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{pick.matchDate}</span>
         </div>
-        <span className="text-[11px] font-black text-orange-400 tracking-widest">{pick.matchTime} (PARIS)</span>
+        <span className="text-[11px] font-black text-orange-400 tracking-widest">{pick.matchTime}</span>
       </div>
 
       <div className="flex justify-between items-start mb-6">
