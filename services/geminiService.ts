@@ -3,28 +3,41 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Service NextWin AI - Version Stabilisée pour Vercel
- * Note : process.env.API_KEY est injecté par Vite lors du build.
+ * Service NextWin AI - Version PRO Ultra-Fiable 2025
+ * Utilise Gemini 3 Pro pour une recherche web de haute précision et un raisonnement complexe.
  */
 
 const getAIInstance = () => {
-    // Tentative de récupération de la clé via process.env (shimé par Vite)
+    // Vite injects process.env.API_KEY via the define config in vite.config.ts
     const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : undefined;
     
     if (!apiKey || apiKey === "undefined" || apiKey === "") {
-        console.error("ERREUR CRITIQUE : La clé API Gemini est manquante.");
-        throw new Error("Configuration API incomplète. Assurez-vous d'avoir ajouté API_KEY dans les variables d'environnement Vercel et d'avoir relancé un déploiement.");
+        console.error("NextWin Error: API_KEY is missing in environment.");
+        throw new Error("Configuration API incomplète sur Vercel. Assurez-vous d'avoir ajouté API_KEY dans les variables d'environnement.");
     }
     return new GoogleGenAI({ apiKey });
 };
 
-const extractJsonFromText = (text: string) => {
-    if (!text) throw new Error("Réponse vide de l'IA.");
-    
-    console.log("DEBUG: Réponse brute reçue de l'IA:", text);
+// Obtenir le contexte temporel précis de Paris
+const getParisContext = () => {
+    return new Intl.DateTimeFormat('fr-FR', {
+        timeZone: 'Europe/Paris',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        weekday: 'long'
+    }).format(new Date());
+};
 
-    // Nettoyage des balises de code Markdown
+const extractJsonFromText = (text: string) => {
+    if (!text) throw new Error("Réponse vide du moteur IA.");
+    
+    // Nettoyage rigoureux du texte pour extraire le JSON
     let cleaned = text.trim();
+    
+    // Supprimer les blocs de code Markdown si présents
     if (cleaned.includes("```json")) {
         cleaned = cleaned.split("```json")[1].split("```")[0];
     } else if (cleaned.includes("```")) {
@@ -39,39 +52,66 @@ const extractJsonFromText = (text: string) => {
         try {
             return JSON.parse(cleaned);
         } catch (e) {
-            console.error("ERREUR PARSING JSON:", e, "Texte tenté:", cleaned);
-            // Réparation basique
+            // Tentative de réparation de JSON mal formé (virgules traînantes)
             try {
                 const repaired = cleaned.replace(/,\s*([\]}])/g, '$1');
                 return JSON.parse(repaired);
             } catch (inner) {
-                throw new Error("L'IA a renvoyé un format de données invalide. Réessayez.");
+                console.error("Parsing Error details:", cleaned);
+                throw new Error("Le format des données renvoyées par l'IA est invalide.");
             }
         }
     }
-    throw new Error("Impossible d'extraire des données valides de la réponse IA.");
+    throw new Error("Aucune donnée structurée (JSON) n'a été trouvée dans la réponse.");
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
   try {
     const ai = getAIInstance();
+    const timeNow = getParisContext();
     const langName = language === 'fr' ? 'Français' : 'English';
 
-    const prompt = `NextWin System. 
-    Find 9 REAL pro matches (3 Football, 3 Basketball, 3 Tennis) for today/tomorrow.
-    Respond ONLY with a raw JSON object like this: 
-    {"picks": [{"sport": "football", "match": "...", "betType": "...", "probability": "75%", "analysis": "...", "confidence": "High", "matchDate": "...", "matchTime": "..."}]}.
-    Language: ${langName}.`;
+    // Utilisation de Gemini 3 Pro pour la recherche temps réel complexe
+    const prompt = `NextWin AI Engine. 
+    DATE ACTUELLE (PARIS) : ${timeNow}. 
+    ANNEE : 2025 (Important: Ignore tout match de 2024 ou avant).
+    
+    MISSION : Utilise Google Search pour identifier 9 VRAIS matchs de sport professionnel prévus dans les prochaines 48 HEURES.
+    - 3 Football (Ligue 1, Premier League, Liga, Champions League...)
+    - 3 Basketball (NBA, Euroleague...)
+    - 3 Tennis (ATP, WTA...)
+    
+    FORMAT DE SORTIE : Réponds UNIQUEMENT avec un objet JSON valide. Pas de texte avant ou après.
+    
+    STRUCTURE JSON :
+    {
+      "picks": [
+        {
+          "sport": "football" | "basketball" | "tennis",
+          "match": "Nom de l'équipe A vs Nom de l'équipe B",
+          "betType": "Type de pari (ex: Victoire PSG, Over 2.5)",
+          "probability": "XX%",
+          "analysis": "Analyse ultra-courte (20 mots max) basée sur les infos réelles de 2025",
+          "confidence": "High" | "Very High",
+          "matchDate": "DD/MM/2025",
+          "matchTime": "HH:MM (Heure de Paris)"
+        }
+      ]
+    }
+    Langue des textes : ${langName}.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt
+      model: 'gemini-3-pro-preview', // Pro pour une meilleure recherche web
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }]
+      }
     });
 
     const result = extractJsonFromText(response.text || "{}");
     return result.picks || [];
   } catch (error) {
-    console.error("Daily Picks Failure:", error);
+    console.error("NextWin DailyPicks Failure:", error);
     return [];
   }
 };
@@ -79,53 +119,77 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
   try {
     const ai = getAIInstance();
+    const timeNow = getParisContext();
     const langName = language === 'fr' ? 'Français' : 'English';
 
-    // On demande le JSON sans l'outil Search dans le même appel pour éviter les conflits de format
-    // Le modèle Flash-3 est suffisamment intelligent pour avoir des connaissances de base récentes
-    const prompt = `Expert NextWin PRO.
-    MATCH : ${request.match} (${request.sport}). TYPE : ${request.betType}.
+    const prompt = `EXPERT ANALYSTE NEXTWIN PRO. 
+    HEURE DE PARIS : ${timeNow}. ANNEE : 2025.
     
-    TACHE : Analyse approfondie.
-    REPONDS UNIQUEMENT AVEC CE JSON (${langName}) :
+    MATCH : ${request.match} (${request.sport}). TYPE DE PARI : ${request.betType}.
+    
+    TACHE :
+    1. Utilise Google Search pour trouver les dernières news (blessures, suspensions, météo, cotes) pour ce match spécifique en 2025.
+    2. Vérifie la date et l'heure exacte du match (Heure de Paris).
+    3. Produis une analyse experte structurée en JSON (${langName}).
+    
+    STRUCTURE JSON ATTENDUE :
     {
-      "detailedAnalysis": "Analyse de 3-4 phrases sur la forme et les enjeux...",
+      "detailedAnalysis": "Analyse technique approfondie (4-5 phrases) incluant les infos réelles trouvées...",
       "successProbability": "XX%",
-      "riskAssessment": "Low"|"Medium"|"High",
-      "matchDate": "Date du match",
-      "matchTime": "Heure du match",
-      "aiOpinion": "Ta conclusion finale en 1 phrase"
+      "riskAssessment": "Low" | "Medium" | "High",
+      "matchDate": "DD/MM/2025",
+      "matchTime": "HH:MM (Heure de Paris)",
+      "aiOpinion": "Ta conclusion d'expert en 1 phrase percutante"
     }`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview', 
-        contents: prompt
+        model: 'gemini-3-pro-preview', 
+        contents: prompt,
+        config: {
+            tools: [{ googleSearch: {} }]
+        }
     });
     
     const result = extractJsonFromText(response.text || "{}");
-    return { ...result, sources: [] };
+    
+    // Extraction des sources web
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const sources: GroundingSource[] = chunks
+        .filter((c: any) => c.web?.uri)
+        .map((c: any) => ({
+            title: c.web.title || 'Source Officielle',
+            uri: c.web.uri
+        }));
+
+    return { ...result, sources };
   } catch (error: any) {
-    console.error("Analysis Failure:", error);
-    throw new Error(error.message || "Erreur lors de l'analyse. Vérifiez votre clé API.");
+    console.error("NextWin Analysis Failure:", error);
+    throw new Error(error.message || "Impossible de contacter le moteur d'analyse en temps réel.");
   }
 };
 
 export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'dashboard' | 'tactical' = 'dashboard'): Promise<string | undefined> => {
   try {
     const ai = getAIInstance();
-    const prompt = `High-tech sports analytics ${style} for ${request.match}, neon orange.`;
+    const visualPrompt = `Futuristic sports analytics ${style} for ${request.match} in 2025. Professional interface, neon orange and black. 4K quality.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: prompt }] },
-      config: { imageConfig: { aspectRatio: "16:9" } }
+      model: 'gemini-2.5-flash-image', // Ce modèle reste performant pour les images
+      contents: { parts: [{ text: visualPrompt }] },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9"
+        }
+      }
     });
     
     for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      if (part.inlineData) {
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      }
     }
   } catch (error) {
-    console.error("Visual Generation Failure:", error);
+    console.error("NextWin Visual Generation Failure:", error);
   }
   return undefined;
 };
