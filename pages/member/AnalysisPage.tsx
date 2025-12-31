@@ -24,10 +24,10 @@ const AnalysisPage: React.FC = () => {
 
   const loadingSteps = [
     "Connexion au réseau NextWin...",
-    "Recherche des effectifs 2025...",
-    "Vérification des transferts...",
-    "Calcul des probabilités...",
-    "Finalisation du rapport..."
+    "Recherche des effectifs 2025 (Validation Transferts)...",
+    "Analyse des blessures en direct...",
+    "Calcul des probabilités algorithmiques...",
+    "Génération du rapport d'expertise..."
   ];
 
   useEffect(() => {
@@ -44,7 +44,8 @@ const AnalysisPage: React.FC = () => {
     if ((window as any).aistudio?.openSelectKey) {
         await (window as any).aistudio.openSelectKey();
         setError(null);
-        handleSubmit(new Event('submit') as any);
+        // On retente l'analyse après sélection de la clé
+        setTimeout(() => handleSubmit(new Event('submit') as any), 500);
     }
   };
 
@@ -57,7 +58,7 @@ const AnalysisPage: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!selectedSport || !selectedBetType || !entity1 || !entity2) return;
 
     setIsLoading(true);
@@ -95,8 +96,8 @@ const AnalysisPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Analyseur <span className="text-orange-500">Pro v5.0</span></h1>
-        <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.3em]">Validation Temps Réel 2025</p>
+        <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Analyseur <span className="text-orange-500">NextWin v5.5</span></h1>
+        <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.3em]">Validation Saison 2024/2025 Active</p>
       </div>
       
       <div className="grid lg:grid-cols-12 gap-8">
@@ -128,27 +129,28 @@ const AnalysisPage: React.FC = () => {
             {isLoading ? (
                 <div className="flex-grow flex flex-col items-center justify-center py-20 gap-8">
                     <Spinner />
-                    <div className="text-center space-y-3">
+                    <div className="text-center space-y-3 px-6">
                         <p className="text-orange-400 font-black uppercase tracking-widest text-lg animate-pulse">{loadingSteps[loadingStep]}</p>
+                        <p className="text-gray-600 text-[10px] font-bold">L'IA croise les données Transfermarkt et L'Equipe...</p>
                     </div>
                 </div>
             ) : error ? (
                 <div className="flex-grow flex flex-col items-center justify-center p-12 text-center space-y-8 animate-fadeIn">
                     <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center text-4xl border border-orange-500/20 shadow-xl shadow-orange-500/5">⚠️</div>
                     <div className="max-w-sm">
-                        <h3 className="text-2xl font-black text-white mb-4">Limite de Quota</h3>
+                        <h3 className="text-2xl font-black text-white mb-4">Erreur de Quota (429)</h3>
                         <p className="text-gray-400 font-medium leading-relaxed mb-8">
-                            {error.message}
+                            Votre clé API actuelle a atteint sa limite de recherche Web gratuite. 
                             <br/><br/>
-                            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-orange-400 underline">En savoir plus sur la facturation Google</a>
+                            <strong>Solution :</strong> Utilisez une clé avec facturation activée ou attendez quelques minutes.
                         </p>
                         
                         {error.code === 429 ? (
-                             <Button onClick={handleOpenKeyPicker} className="w-full py-4 text-xs font-black uppercase tracking-widest">
-                                Utiliser ma propre clé API
+                             <Button onClick={handleOpenKeyPicker} className="w-full py-4 text-xs font-black uppercase tracking-widest bg-orange-500 shadow-xl shadow-orange-500/20">
+                                Connecter ma Clé Pro (AI Studio)
                             </Button>
                         ) : (
-                             <Button onClick={() => { setError(null); handleSubmit(new Event('submit') as any); }} className="w-full py-4 text-xs font-black uppercase tracking-widest bg-white/5 border border-white/10">
+                             <Button onClick={() => handleSubmit(new Event('submit') as any)} className="w-full py-4 text-xs font-black uppercase tracking-widest bg-white/5 border border-white/10">
                                 Réessayer l'Analyse
                             </Button>
                         )}
@@ -160,18 +162,18 @@ const AnalysisPage: React.FC = () => {
                         <h2 className="text-3xl font-black text-white">Rapport IA <span className="text-orange-500">2025</span></h2>
                         <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full">
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            <span className="text-[9px] uppercase font-black text-green-400 tracking-widest">Data 2024/25 Verified</span>
+                            <span className="text-[9px] uppercase font-black text-green-400 tracking-widest">Effectifs 24/25 Validés</span>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
-                            <h3 className="text-[10px] uppercase text-gray-500 font-black mb-4 tracking-widest">Fiabilité Statistique</h3>
+                            <h3 className="text-[10px] uppercase text-gray-500 font-black mb-4 tracking-widest">Fiabilité NextWin</h3>
                             <p className="text-5xl font-black text-white tracking-tighter">{analysisResult.successProbability}</p>
                             <ProbabilityGauge probability={parseInt(analysisResult.successProbability)} />
                         </div>
                         <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
-                            <h3 className="text-[10px] uppercase text-gray-500 font-black mb-4 tracking-widest">Facteur de Risque</h3>
+                            <h3 className="text-[10px] uppercase text-gray-500 font-black mb-4 tracking-widest">Risque Détecté</h3>
                             <p className={`text-4xl font-black mb-2 ${riskColor[analysisResult.riskAssessment as keyof typeof riskColor] || 'text-white'}`}>
                                 {analysisResult.riskAssessment}
                             </p>
@@ -179,8 +181,8 @@ const AnalysisPage: React.FC = () => {
                     </div>
 
                     <div className="bg-[#10101A] p-8 rounded-[2rem] border border-white/5">
-                        <h3 className="text-[11px] uppercase text-orange-500 font-black mb-4 tracking-[0.2em]">Analyse Technique (Effectif 2025)</h3>
-                        <p className="text-gray-300 text-base leading-relaxed font-medium mb-6">{analysisResult.detailedAnalysis}</p>
+                        <h3 className="text-[11px] uppercase text-orange-500 font-black mb-4 tracking-[0.2em]">Rapport de Transfert & Effectif</h3>
+                        <p className="text-gray-300 text-base leading-relaxed font-medium mb-6 whitespace-pre-wrap">{analysisResult.detailedAnalysis}</p>
                         <div className="p-4 bg-orange-500/5 rounded-2xl border border-orange-500/20 italic text-sm text-orange-200">
                            {analysisResult.aiOpinion}
                         </div>
@@ -189,7 +191,7 @@ const AnalysisPage: React.FC = () => {
                     {analysisResult.sources && (
                         <div className="flex flex-wrap gap-2 pt-4">
                             {analysisResult.sources.map((s, i) => (
-                                <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" className="text-[9px] bg-gray-900/80 text-gray-400 px-4 py-2 rounded-xl border border-white/5 hover:border-orange-500/40 hover:text-white transition-all">
+                                <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" className="text-[9px] bg-gray-900/80 text-gray-400 px-4 py-2 rounded-xl border border-gray-800 hover:border-orange-500/40 hover:text-white transition-all">
                                     🔗 {s.title}
                                 </a>
                             ))}
@@ -199,7 +201,7 @@ const AnalysisPage: React.FC = () => {
             ) : (
                 <div className="flex-grow flex flex-col items-center justify-center opacity-40 text-center">
                     <div className="text-8xl mb-6 grayscale opacity-20">📊</div>
-                    <p className="text-xs font-black uppercase tracking-[0.4em] text-gray-600">En attente de vos paramètres</p>
+                    <p className="text-xs font-black uppercase tracking-[0.4em] text-gray-600">Prêt pour l'analyse Pro v5.5</p>
                 </div>
             )}
             </Card>

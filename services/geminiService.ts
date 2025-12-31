@@ -3,19 +3,17 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Service NextWin AI - Moteur v5.0 "Quantum-Search"
- * Supporte le sélecteur de clé API pour éviter les erreurs 429
+ * Service NextWin AI - Moteur v5.5 "Anti-429 & Pro-Search"
  */
 
 const getAPIKey = async () => {
-    // 1. Vérifie si l'utilisateur a sélectionné une clé via le dialogue AI Studio
-    const hasKey = (window as any).aistudio?.hasSelectedApiKey ? await (window as any).aistudio.hasSelectedApiKey() : false;
+    // Vérifie si l'utilisateur a sélectionné une clé via le dialogue AI Studio (priorité haute)
+    const hasSelected = (window as any).aistudio?.hasSelectedApiKey ? await (window as any).aistudio.hasSelectedApiKey() : false;
     
-    // 2. Si une clé est sélectionnée, elle est injectée dans process.env.API_KEY
-    // Sinon, on utilise la clé par défaut de l'environnement Vercel
+    // Récupère la clé injectée par Vercel ou AI Studio
     const key = process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
     
-    if (!key || key === "undefined") return null;
+    if (!key || key === "undefined" || key === "null") return null;
     return key;
 };
 
@@ -34,12 +32,9 @@ const getParisContext = () => {
 const parseGeminiError = (error: any): { message: string, code: number } => {
     const errorStr = error?.toString() || "";
     if (errorStr.includes("429") || errorStr.includes("RESOURCE_EXHAUSTED")) {
-        return { message: "QUOTA ÉPUISÉ : Votre clé API a atteint sa limite. Veuillez sélectionner une clé avec facturation activée.", code: 429 };
+        return { message: "LIMITE DE REQUÊTES ATTEINTE (429). Votre clé gratuite est saturée par la recherche Google.", code: 429 };
     }
-    if (errorStr.includes("entity was not found")) {
-        return { message: "CLÉ INVALIDE : La clé sélectionnée est introuvable ou périmée.", code: 404 };
-    }
-    return { message: error.message || "Erreur technique de communication avec l'IA.", code: 500 };
+    return { message: "Erreur de connexion aux serveurs Google AI. Veuillez réessayer.", code: 500 };
 };
 
 const extractJsonFromText = (text: string) => {
@@ -48,10 +43,10 @@ const extractJsonFromText = (text: string) => {
         try {
             return JSON.parse(jsonMatch[0]);
         } catch (e) {
-            throw new Error("Erreur de formatage des données IA.");
+            throw new Error("Format de réponse invalide.");
         }
     }
-    throw new Error("L'IA n'a pas renvoyé de format exploitable.");
+    throw new Error("L'IA n'a pas renvoyé de données structurées.");
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
@@ -61,11 +56,11 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
   try {
     const ai = new GoogleGenAI({ apiKey });
     const timeNow = getParisContext();
-    const langLabel = language === 'fr' ? 'français' : 'english';
-
     const prompt = `DATE : ${timeNow}. 
-    TROUVE 9 MATCHS RÉELS (3 Foot, 3 Basket, 3 Tennis) pour aujourd'hui ou demain.
-    VÉRIFICATION SQUAD 2025 : Utilise Google Search pour vérifier que les joueurs cités sont bien dans leur club ACTUEL (ex: Mafouta à Guingamp, PAS à Amiens).
+    MISSION : Trouve 9 matchs RÉELS (3 Foot, 3 Basket, 3 Tennis) pour aujourd'hui ou demain.
+    VÉRIFICATION OBLIGATOIRE (Google Search) : 
+    - Vérifie l'effectif actuel 2024/2025. Exemple : Mafouta est à GUINGAMP (EAG).
+    - Donne l'heure de Paris.
     JSON : {"picks": [{"sport": "...", "match": "...", "betType": "...", "probability": "XX%", "analysis": "...", "confidence": "High", "matchDate": "JJ/MM/2025", "matchTime": "HH:MM"}]}`;
 
     const response = await ai.models.generateContent({
@@ -79,37 +74,37 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
     const result = extractJsonFromText(response.text || "");
     return result.picks || [];
   } catch (error) {
-    console.error("Daily Picks Error:", error);
+    console.error(error);
     return [];
   }
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
   const apiKey = await getAPIKey();
-  if (!apiKey) throw new Error("Veuillez configurer une clé API pour continuer.");
+  if (!apiKey) throw new Error("Clé API manquante.");
 
   try {
     const ai = new GoogleGenAI({ apiKey });
     const timeNow = getParisContext();
-    const langLabel = language === 'fr' ? 'français' : 'english';
 
-    const prompt = `NEXTWIN ANALYSEUR v5.0. 
-    MATCH : ${request.match} (${request.sport}). 
-    PARI : ${request.betType}. 
-    DATE : ${timeNow}.
+    const prompt = `NEXTWIN ANALYSEUR v5.5.
+    MATCH : ${request.match} (${request.sport}). PARI : ${request.betType}. 
+    CONTEXTE : ${timeNow}.
 
-    ÉTAPE 1 (SEARCH) : Vérifie l'effectif actuel 2024/2025 sur Transfermarkt ou L'Equipe. 
-    ÉTAPE 2 (SEARCH) : Trouve les derniers blessés et suspendus réels.
-    ÉTAPE 3 (ANALYSIS) : Calcule la probabilité de réussite du pari : ${request.betType}.
+    PROTOCOLE DE SÉCURITÉ 2025 :
+    1. Utilise Google Search pour trouver l'effectif actuel 2024/2025 des deux équipes.
+    2. Vérifie spécifiquement les derniers transferts (ex: Mafouta, etc).
+    3. Analyse les blessures de moins de 24h.
+    4. Rédige une analyse pro de 200 mots.
 
-    RETOURNE CE JSON :
+    JSON :
     {
-      "detailedAnalysis": "Analyse pro en ${langLabel} (min 150 mots) avec infos blessés/transferts...",
+      "detailedAnalysis": "Analyse détaillée validée avec les effectifs 2025...",
       "successProbability": "XX%",
       "riskAssessment": "Low"|"Medium"|"High",
       "matchDate": "JJ/MM/2025",
       "matchTime": "HH:MM",
-      "aiOpinion": "Conseil stratégique..."
+      "aiOpinion": "Conseil expert..."
     }`;
 
     const response = await ai.models.generateContent({
@@ -128,8 +123,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
 
     return { ...result, sources };
   } catch (error: any) {
-    const parsed = parseGeminiError(error);
-    throw parsed;
+    throw parseGeminiError(error);
   }
 };
 
@@ -140,7 +134,7 @@ export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'd
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: `Professional tactical sports visualization for ${request.match}.` }] },
+      contents: { parts: [{ text: `Tactical board for ${request.match}.` }] },
     });
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
