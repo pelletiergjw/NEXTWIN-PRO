@@ -4,7 +4,7 @@ import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from
 
 /**
  * Service to interact with the NextWin AI engine for sports analysis and daily picks.
- * Optimized for French precision, real-time roster accuracy, and 2024/2025 season validation.
+ * Optimized for French precision, CET/CEST time accuracy, roster integrity, and 2024/2025 season validation.
  */
 
 const responseSchema = {
@@ -12,7 +12,7 @@ const responseSchema = {
     properties: {
         detailedAnalysis: {
             type: Type.STRING,
-            description: "Analyse complète. Doit impérativement confirmer la ligue actuelle ET valider la présence des joueurs clés cités dans l'effectif actuel (2024/2025) via une recherche search spécifique.",
+            description: "Analyse complète. Doit confirmer la ligue actuelle (2024/2025) et valider la présence des joueurs dans l'effectif actuel via Search.",
         },
         successProbability: {
             type: Type.STRING,
@@ -24,11 +24,11 @@ const responseSchema = {
         },
         matchDate: {
             type: Type.STRING,
-            description: "Date officielle du match au format français (ex: 'Samedi 15 Mars 2025').",
+            description: "Date officielle du match en France (ex: 'Samedi 15 Mars 2025'). Ne pas utiliser de date américaine.",
         },
         matchTime: {
             type: Type.STRING,
-            description: "Heure de coup d'envoi à Paris (CET/CEST).",
+            description: "Heure de coup d'envoi impérativement convertie en HEURE DE PARIS (CET/CEST) au format HH:mm. C'est critique pour les matchs US (NBA).",
         },
         aiOpinion: {
             type: Type.STRING,
@@ -52,8 +52,8 @@ const dailyPicksSchema = {
           probability: { type: Type.STRING },
           analysis: { type: Type.STRING },
           confidence: { type: Type.STRING, enum: ["High", "Very High"] },
-          matchDate: { type: Type.STRING },
-          matchTime: { type: Type.STRING }
+          matchDate: { type: Type.STRING, description: "Date en France (CET/CEST)." },
+          matchTime: { type: Type.STRING, description: "Heure précise de Paris (HH:mm)." }
         },
         required: ["sport", "match", "betType", "probability", "analysis", "confidence", "matchDate", "matchTime"]
       }
@@ -62,12 +62,15 @@ const dailyPicksSchema = {
   required: ["picks"]
 };
 
+/**
+ * Gets a precise localized time context for Paris to help the AI anchor its search results.
+ */
 const getParisTimeContext = () => {
     const now = new Date();
     const formatter = new Intl.DateTimeFormat('fr-FR', {
         timeZone: 'Europe/Paris',
         dateStyle: 'full',
-        timeStyle: 'long',
+        timeStyle: 'medium',
     });
     return formatter.format(now);
 };
@@ -79,12 +82,14 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
 
   const prompt = `
     RÔLE SYSTÈME: Moteur NextWin v4.0. 
-    CONTEXTE TEMPOREL (PARIS): ${timeContext}
+    CONTEXTE TEMPOREL RÉEL (PARIS, FRANCE): ${timeContext}
 
-    INSTRUCTIONS CRITIQUES:
-    1. RECHERCHE GOOGLE INDISPENSABLE: Trouve 9 matchs réels pour aujourd'hui ou demain.
-    2. VÉRIFICATION EFFECTIFS: Avant de suggérer un pari (surtout buteur), vérifie via search que le joueur appartient bien au club indiqué pour la saison 2024/2025.
-    3. RÉPONSE: JSON en ${languageFullName}.
+    PROTOCOLE "NEXTWIN TIME PRECISION" :
+    1. RECHERCHE SEARCH: Identifie 9 matchs réels prévus dans les 24-48h.
+    2. CONVERSION HORAIRE OBLIGATOIRE: Trouve l'heure locale du match et convertis-la systématiquement en HEURE DE PARIS (CET/CEST). 
+       Exemple: Un match NBA à 8 PM ET doit être converti en 02:00 (le lendemain) à Paris.
+    3. VÉRIFICATION ROSTERS: Confirme l'effectif 2024/2025 avant toute mention de joueur.
+    4. RÉPONSE: JSON en ${languageFullName}. Utilise uniquement l'heure française.
   `;
 
   try {
@@ -129,36 +134,39 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   const timeContext = getParisTimeContext();
 
   const prompt = `
-    RÔLE: Expert Analyste NextWin PRO - Spécialiste Data & Transferts.
+    RÔLE: Expert Analyste NextWin PRO - Spécialiste Data, Transferts et Synchronisation Horaire.
     
-    DATE RÉFÉRENCE (PARIS): ${timeContext}
+    CONTEXTE TEMPOREL (PARIS, FRANCE): ${timeContext}
 
-    PROTOCOLE "ZERO HALLUCINATION" :
-    1. RECHERCHE DES EFFECTIFS (Saison 2024/2025) : 
-       - Si le pari est de type "Buteur" ou implique un joueur spécifique, tu DOIS faire une recherche Google pour confirmer son club actuel. 
-       - INTERDICTION de te baser sur tes connaissances internes (ex: Mafouta n'est plus à Amiens, il est à Guingamp).
-       - Vérifie le transfert le plus récent via des sites comme Transfermarkt ou L'Équipe.
+    PROTOCOLE "NEXTWIN PRECISION" :
+    1. VÉRIFICATION TEMPORELLE (CRITIQUE) :
+       - Recherche l'heure locale exacte de ${request.match}.
+       - CONVERTIS CET HORAIRE EN HEURE DE PARIS (CET/CEST).
+       - Si le match est fini par rapport à "${timeContext}", mentionne-le et donne le score si disponible.
+       - Pour la NBA : l'heure doit être celle du milieu de la nuit ou matinée en France.
 
-    2. VÉRIFICATION DIVISION : Confirme la division exacte (Ligue 2, National, etc.) pour chaque équipe.
-    
-    3. ANALYSE DU PARI :
+    2. VÉRIFICATION EFFECTIFS (Saison 2024/2025) : 
+       - Utilise Search pour confirmer le club actuel de chaque joueur (ex: Mafouta est à Guingamp, PAS à Amiens).
+       - Toute hallucination sur un effectif est une faute grave.
+
+    3. ANALYSE :
        - Sport: ${request.sport}
        - Match: ${request.match}
-       - Type de pari: ${request.betType}
+       - Pari: ${request.betType}
 
-    4. FORMAT DE SORTIE : JSON uniquement (${languageFullName}).
-       - Dans 'detailedAnalysis', commence par confirmer : "Effectifs et divisions vérifiés pour la saison 2024/2025 via Search."
+    RÉPONDRE EN JSON (${languageFullName}).
+    Le champ 'matchTime' doit être l'heure de Paris (format HH:mm).
   `;
 
   try {
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview', // Modèle Pro indispensable pour croiser les sources de recherche
+        model: 'gemini-3-pro-preview', // Modèle Pro pour la rigueur du calcul horaire
         contents: prompt,
         config: {
             tools: [{ googleSearch: {} }],
             responseMimeType: "application/json",
             responseSchema: responseSchema,
-            thinkingConfig: { thinkingBudget: 8000 } // Budget de réflexion augmenté pour valider les transferts
+            thinkingConfig: { thinkingBudget: 12000 } // Budget maximum pour réconciliation de fuseaux horaires
         }
     });
     
@@ -167,7 +175,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const sources: GroundingSource[] = groundingChunks 
         ? groundingChunks.map((chunk: any) => ({
-            title: chunk.web?.title || 'Source Roster Officielle',
+            title: chunk.web?.title || 'Donnée Officielle',
             uri: chunk.web?.uri || '#'
           })).filter((s: any) => s.uri !== '#')
         : [];
