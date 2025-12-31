@@ -4,7 +4,7 @@ import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from
 
 /**
  * Service to interact with the NextWin AI engine for sports analysis and daily picks.
- * Optimized for French precision, real-time accuracy, and 2024/2025 season validation.
+ * Optimized for French precision, real-time roster accuracy, and 2024/2025 season validation.
  */
 
 const responseSchema = {
@@ -12,7 +12,7 @@ const responseSchema = {
     properties: {
         detailedAnalysis: {
             type: Type.STRING,
-            description: "Analyse complète. Doit impérativement confirmer la ligue actuelle (ex: Ligue 2, National) des deux équipes pour la saison 2024/2025 après vérification search.",
+            description: "Analyse complète. Doit impérativement confirmer la ligue actuelle ET valider la présence des joueurs clés cités dans l'effectif actuel (2024/2025) via une recherche search spécifique.",
         },
         successProbability: {
             type: Type.STRING,
@@ -24,11 +24,11 @@ const responseSchema = {
         },
         matchDate: {
             type: Type.STRING,
-            description: "Date officielle du match au format français (ex: 'Samedi 15 Mars 2025'). Doit correspondre à la date en France.",
+            description: "Date officielle du match au format français (ex: 'Samedi 15 Mars 2025').",
         },
         matchTime: {
             type: Type.STRING,
-            description: "Heure de coup d'envoi précise au format français (ex: '20:45'). Doit être l'heure de Paris (CET/CEST).",
+            description: "Heure de coup d'envoi à Paris (CET/CEST).",
         },
         aiOpinion: {
             type: Type.STRING,
@@ -52,8 +52,8 @@ const dailyPicksSchema = {
           probability: { type: Type.STRING },
           analysis: { type: Type.STRING },
           confidence: { type: Type.STRING, enum: ["High", "Very High"] },
-          matchDate: { type: Type.STRING, description: "Date du match en France." },
-          matchTime: { type: Type.STRING, description: "Heure de Paris (CET/CEST)." }
+          matchDate: { type: Type.STRING },
+          matchTime: { type: Type.STRING }
         },
         required: ["sport", "match", "betType", "probability", "analysis", "confidence", "matchDate", "matchTime"]
       }
@@ -62,9 +62,6 @@ const dailyPicksSchema = {
   required: ["picks"]
 };
 
-/**
- * Gets the current time in Paris to provide as anchor for the AI.
- */
 const getParisTimeContext = () => {
     const now = new Date();
     const formatter = new Intl.DateTimeFormat('fr-FR', {
@@ -85,11 +82,9 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
     CONTEXTE TEMPOREL (PARIS): ${timeContext}
 
     INSTRUCTIONS CRITIQUES:
-    1. RECHERCHE GOOGLE OBLIGATOIRE: Trouve 9 matchs réels prévus AUJOURD'HUI ou DEMAIN.
-    2. VÉRIFICATION DIVISION: Assure-toi que les équipes sont dans leur division officielle 2024/2025. 
-    3. SYNCHRONISATION HORAIRE: Convertis tous les horaires trouvés en HEURE DE PARIS (CET/CEST).
-    4. SELECTION: Exactement 3 Foot, 3 Basket, 3 Tennis.
-    5. RÉPONSE: JSON en ${languageFullName}.
+    1. RECHERCHE GOOGLE INDISPENSABLE: Trouve 9 matchs réels pour aujourd'hui ou demain.
+    2. VÉRIFICATION EFFECTIFS: Avant de suggérer un pari (surtout buteur), vérifie via search que le joueur appartient bien au club indiqué pour la saison 2024/2025.
+    3. RÉPONSE: JSON en ${languageFullName}.
   `;
 
   try {
@@ -121,51 +116,49 @@ const generateMockAnalysis = (request: AnalysisRequest, language: 'fr' | 'en' = 
         riskAssessment: 'Medium',
         matchDate: "À vérifier",
         matchTime: "--:--",
-        aiOpinion: "Analyse indisponible pour le moment.",
+        aiOpinion: "Données indisponibles.",
         sources: []
     };
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
-  if (!process.env.API_KEY) {
-      return generateMockAnalysis(request, language);
-  }
+  if (!process.env.API_KEY) return generateMockAnalysis(request, language);
   
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const languageFullName = language === 'fr' ? 'French' : 'English';
   const timeContext = getParisTimeContext();
 
   const prompt = `
-    RÔLE: Expert Analyste NextWin PRO. Précision de données absolue.
-    ERREUR INTERDITE SUR LES DIVISIONS ET HORAIRES.
+    RÔLE: Expert Analyste NextWin PRO - Spécialiste Data & Transferts.
     
-    DATE ET HEURE ACTUELLE À PARIS: ${timeContext}
+    DATE RÉFÉRENCE (PARIS): ${timeContext}
 
-    PROTOCOLE OBLIGATOIRE:
-    1. VÉRIFICATION SEARCH: Recherche l'état actuel des deux équipes (${request.match}). 
-    2. VALIDATION LIGUE: Confirme impérativement la division/ligue pour la saison 2024/2025. 
-       Ex: Si Nancy est en National et Amiens en Ligue 2, tu dois l'énoncer clairement.
-    3. CALENDRIER: Trouve la date et l'heure exacte du match. Convertis en HEURE FRANÇAISE (Paris).
-       Si le match est déjà fini par rapport à "${timeContext}", signale-le.
-    4. ANALYSE PROFONDE: Stats, blessés, enjeux.
+    PROTOCOLE "ZERO HALLUCINATION" :
+    1. RECHERCHE DES EFFECTIFS (Saison 2024/2025) : 
+       - Si le pari est de type "Buteur" ou implique un joueur spécifique, tu DOIS faire une recherche Google pour confirmer son club actuel. 
+       - INTERDICTION de te baser sur tes connaissances internes (ex: Mafouta n'est plus à Amiens, il est à Guingamp).
+       - Vérifie le transfert le plus récent via des sites comme Transfermarkt ou L'Équipe.
+
+    2. VÉRIFICATION DIVISION : Confirme la division exacte (Ligue 2, National, etc.) pour chaque équipe.
     
-    DEMANDE UTILISATEUR:
-    - Sport: ${request.sport}
-    - Match: ${request.match}
-    - Type de pari: ${request.betType}
+    3. ANALYSE DU PARI :
+       - Sport: ${request.sport}
+       - Match: ${request.match}
+       - Type de pari: ${request.betType}
 
-    RÉPONDRE EN JSON (${languageFullName}).
+    4. FORMAT DE SORTIE : JSON uniquement (${languageFullName}).
+       - Dans 'detailedAnalysis', commence par confirmer : "Effectifs et divisions vérifiés pour la saison 2024/2025 via Search."
   `;
 
   try {
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview', // Passage au modèle Pro pour une meilleure logique de recherche
+        model: 'gemini-3-pro-preview', // Modèle Pro indispensable pour croiser les sources de recherche
         contents: prompt,
         config: {
             tools: [{ googleSearch: {} }],
             responseMimeType: "application/json",
             responseSchema: responseSchema,
-            thinkingConfig: { thinkingBudget: 4000 } // Autorise la réflexion pour réconcilier les données search
+            thinkingConfig: { thinkingBudget: 8000 } // Budget de réflexion augmenté pour valider les transferts
         }
     });
     
@@ -174,7 +167,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const sources: GroundingSource[] = groundingChunks 
         ? groundingChunks.map((chunk: any) => ({
-            title: chunk.web?.title || 'Donnée Officielle',
+            title: chunk.web?.title || 'Source Roster Officielle',
             uri: chunk.web?.uri || '#'
           })).filter((s: any) => s.uri !== '#')
         : [];
@@ -188,35 +181,22 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
 
 export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'dashboard' | 'tactical' = 'dashboard'): Promise<string | undefined> => {
   if (!process.env.API_KEY) return undefined;
-  
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  let visualPrompt = '';
-  if (style === 'dashboard') {
-    visualPrompt = `Futuristic pro sports analytics dashboard for "${request.match}". Win probabilities, data charts, neon orange/deep blue, 4K realistic UI.`;
-  } else {
-    visualPrompt = `Tactical tactical sports view for "${request.match}". Top-down dark pitch with neon glowing tactical arrows and heatmaps. High-tech.`;
-  }
+  const visualPrompt = style === 'dashboard' 
+    ? `Pro sports analytics dashboard for "${request.match}" (${request.sport}). Futuristic UI, stats, orange/blue theme.`
+    : `Tactical top-down sports view for "${request.match}" (${request.sport}). Glowing neon arrows and heatmaps.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: { parts: [{ text: visualPrompt }] },
-      config: {
-        imageConfig: {
-          aspectRatio: "16:9"
-        }
-      }
+      config: { imageConfig: { aspectRatio: "16:9" } }
     });
-
     for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-      }
+      if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
     }
     return undefined;
   } catch (error) {
-    console.error("Error generating visual analysis:", error);
     return undefined;
   }
 };
