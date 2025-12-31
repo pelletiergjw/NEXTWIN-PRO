@@ -3,11 +3,10 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Extrait un objet JSON proprement, même si l'IA ajoute du texte autour ou des balises markdown.
+ * Extrait un objet JSON proprement des réponses de l'IA.
  */
 const extractJson = (text: string) => {
     try {
-        // Nettoyage des balises markdown ```json ... ```
         const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const firstBracket = cleanText.indexOf('{');
         const lastBracket = cleanText.lastIndexOf('}');
@@ -22,12 +21,29 @@ const extractJson = (text: string) => {
     return null;
 };
 
-const getAIInstance = () => {
-    const apiKey = process.env.API_KEY;
+/**
+ * Récupère la clé API de manière ultra-robuste.
+ */
+const getApiKey = (): string => {
+    // 1. Tente via import.meta.env (Standard Vite)
+    // @ts-ignore
+    let key = import.meta.env?.VITE_API_KEY;
     
-    // Vérification de sécurité pour le développeur
-    if (!apiKey || apiKey === "" || apiKey === "undefined" || apiKey.length < 10) {
-        throw new Error("API_KEY_INVALID");
+    // 2. Tente via process.env (Injection define)
+    if (!key || key === "" || key === "undefined") {
+        key = process.env.API_KEY;
+    }
+
+    return (key || "").trim();
+};
+
+const getAIInstance = () => {
+    const apiKey = getApiKey();
+    
+    // Si la clé ressemble à la variable non remplacée ou est trop courte
+    if (!apiKey || apiKey === "" || apiKey.length < 10 || apiKey.includes("process.env")) {
+        console.error("DÉTAIL ERREUR : Clé API invalide ou non injectée au build.");
+        throw new Error("API_KEY_MISSING_OR_INVALID");
     }
     
     return new GoogleGenAI({ apiKey });
@@ -58,8 +74,7 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                temperature: 0.7,
-                systemInstruction: "Tu es l'expert NextWin. Utilise Google Search pour trouver des matchs RÉELS. Réponds exclusivement en JSON."
+                systemInstruction: "Tu es l'expert NextWin. Utilise la recherche Google pour les matchs RÉELS. Réponds exclusivement en JSON."
             }
         });
 
@@ -75,22 +90,14 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     try {
         const ai = getAIInstance();
         const prompt = `Analyse expert réelle via Google Search : ${request.match} (${request.betType}).
-        Réponds UNIQUEMENT en JSON :
-        {
-          "detailedAnalysis": "Analyse complète...",
-          "successProbability": "70%",
-          "riskAssessment": "Medium",
-          "aiOpinion": "Résumé...",
-          "matchDate": "Date",
-          "matchTime": "Heure"
-        }`;
+        Réponds UNIQUEMENT en JSON.`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Tu es un analyste pro. Utilise Search. Réponds en JSON pur."
+                systemInstruction: "Expert analyste. Réponds en JSON."
             }
         });
 
