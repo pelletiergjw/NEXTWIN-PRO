@@ -3,41 +3,40 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Extrait un objet JSON d'une chaîne de caractères robuste aux préambules de l'IA.
+ * Extrait un objet JSON proprement, même si l'IA ajoute du texte autour ou des balises markdown.
  */
 const extractJson = (text: string) => {
     try {
-        const firstBracket = text.indexOf('{');
-        const lastBracket = text.lastIndexOf('}');
+        // Nettoyage des balises markdown ```json ... ```
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const firstBracket = cleanText.indexOf('{');
+        const lastBracket = cleanText.lastIndexOf('}');
         
         if (firstBracket !== -1 && lastBracket !== -1) {
-            const jsonString = text.substring(firstBracket, lastBracket + 1);
+            const jsonString = cleanText.substring(firstBracket, lastBracket + 1);
             return JSON.parse(jsonString);
         }
     } catch (e) {
-        console.error("Erreur de parsing JSON IA:", e, "Texte brut:", text);
+        console.error("Erreur de parsing JSON IA:", e);
     }
     return null;
 };
 
 const getAIInstance = () => {
-    // Vite remplace process.env.API_KEY par la valeur réelle pendant le build GitHub Actions
     const apiKey = process.env.API_KEY;
     
-    if (!apiKey || apiKey === "" || apiKey === "process.env.API_KEY") {
-        console.error("CRITICAL: API_KEY non configurée dans les Secrets GitHub.");
-        return null;
+    // Vérification de sécurité pour le développeur
+    if (!apiKey || apiKey === "" || apiKey === "undefined" || apiKey.length < 10) {
+        throw new Error("API_KEY_INVALID");
     }
+    
     return new GoogleGenAI({ apiKey });
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
-    const ai = getAIInstance();
-    if (!ai) throw new Error("API_KEY_MISSING");
-
     try {
-        const prompt = `Trouve 9 matchs de sport RÉELS prévus aujourd'hui ou demain : 3 de Football, 3 de Basketball et 3 de Tennis.
-        Pour chaque match, fournis : l'équipe/joueur 1, l'équipe/joueur 2, le type de pari suggéré, la probabilité de succès (en %), une analyse rapide et la confiance (High ou Very High).
+        const ai = getAIInstance();
+        const prompt = `Trouve 9 matchs de sport RÉELS (3 Foot, 3 Basket, 3 Tennis) pour aujourd'hui ou demain.
         Réponds UNIQUEMENT avec cet objet JSON :
         {
           "picks": [
@@ -59,25 +58,23 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Tu es l'expert NextWin. Tu identifies des matchs RÉELS via Google Search et tu réponds exclusivement en JSON."
+                temperature: 0.7,
+                systemInstruction: "Tu es l'expert NextWin. Utilise Google Search pour trouver des matchs RÉELS. Réponds exclusivement en JSON."
             }
         });
 
         const result = extractJson(response.text || "");
         return (result && result.picks) ? result.picks : [];
-    } catch (error) {
+    } catch (error: any) {
         console.error("Erreur picks:", error);
         throw error;
     }
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
-    const ai = getAIInstance();
-    if (!ai) throw new Error("API_KEY_MISSING");
-
     try {
-        const prompt = `Analyse expert pour le match : ${request.match} (${request.betType}). 
-        Cherche les dernières infos réelles (compos, blessures) via Google Search.
+        const ai = getAIInstance();
+        const prompt = `Analyse expert réelle via Google Search : ${request.match} (${request.betType}).
         Réponds UNIQUEMENT en JSON :
         {
           "detailedAnalysis": "Analyse complète...",
@@ -93,7 +90,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Tu es un analyste pro. Utilise Search pour les données réelles. Réponds en JSON pur."
+                systemInstruction: "Tu es un analyste pro. Utilise Search. Réponds en JSON pur."
             }
         });
 
@@ -111,7 +108,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
             matchTime: result?.matchTime || "N/A",
             sources
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Erreur analyse:", error);
         throw error;
     }
