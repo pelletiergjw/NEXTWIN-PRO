@@ -1,10 +1,9 @@
-
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  // On rend la clé API optionnelle pour le build
+  // On ne bloque plus le build si la clé est absente
   const apiKey = env.API_KEY || env.VITE_API_KEY || "";
 
   return {
@@ -17,9 +16,7 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       assetsDir: 'assets',
       minify: 'esbuild',
-      sourcemap: false,
-      // Éviter les plantages sur les avertissements de build
-      chunkSizeWarningLimit: 1000
+      chunkSizeWarningLimit: 2000
     }
   };
 });
