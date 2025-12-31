@@ -4,17 +4,17 @@ import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from
 
 /**
  * Service NextWin AI - Moteur d'Analyse Professionnel
- * Intégration Google Search & Thinking Process
+ * Focus : Précision temporelle (Paris) et validation via Google Search
  */
 
 const getAPIKey = async () => {
-    // Utilisation de la clé API configurée dans l'environnement
+    // Utilisation de la clé API configurée dans l'environnement Vercel
     const key = process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
     if (!key || key === "undefined" || key === "null") return null;
     return key;
 };
 
-const getParisTime = () => {
+const getParisContext = () => {
     return new Intl.DateTimeFormat('fr-FR', {
         timeZone: 'Europe/Paris',
         year: 'numeric',
@@ -40,12 +40,22 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
   const apiKey = await getAPIKey();
   if (!apiKey) return [];
 
+  const timeNow = getParisContext();
+
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const prompt = `DATE : ${getParisTime()}. 
-    MISSION : Génère 9 pronostics sportifs réels (3 Foot, 3 Basket, 3 Tennis).
-    SOURCES : Utilise Google Search pour vérifier les derniers effectifs et cotes.
-    FORMAT JSON : {"picks": [{"sport": "...", "match": "...", "betType": "...", "probability": "XX%", "analysis": "...", "confidence": "High", "matchDate": "JJ/MM/2025", "matchTime": "HH:MM"}]}`;
+    // Prompt ultra-direct pour forcer les 9 matchs et les heures de Paris
+    const prompt = `DATE ET HEURE ACTUELLE À PARIS : ${timeNow}. 
+    MISSION : Trouve 9 matchs RÉELS prévus pour aujourd'hui ou demain.
+    RÉPARTITION OBLIGATOIRE : 3 Football, 3 Basketball, 3 Tennis.
+    SOURCES : Utilise Google Search pour vérifier les heures de coup d'envoi (Fuseau horaire Paris).
+    
+    IMPORTANT : Les heures doivent être exactes selon l'heure de Paris.
+    
+    FORMAT JSON UNIQUE : 
+    {"picks": [
+      {"sport": "football|basketball|tennis", "match": "A vs B", "betType": "...", "probability": "XX%", "analysis": "Brief analysis...", "confidence": "High", "matchDate": "DD/MM/2025", "matchTime": "HH:MM"}
+    ]}`;
 
     const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview', 
@@ -55,9 +65,11 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
             thinkingConfig: { thinkingBudget: 2000 }
         }
     });
+    
     const result = extractJson(response.text || "");
     return result.picks || [];
   } catch (error) {
+    console.error("DailyPicks Error:", error);
     return [];
   }
 };
@@ -66,25 +78,27 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   const apiKey = await getAPIKey();
   if (!apiKey) throw new Error("Erreur de configuration.");
 
+  const timeNow = getParisContext();
+
   try {
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `ANALYSEUR NEXTWIN EXPERT.
     MATCH : ${request.match} (${request.sport}). 
     PARI : ${request.betType}.
-    CONTEXTE : ${getParisTime()}.
+    CONTEXTE TEMPOREL PARIS : ${timeNow}.
 
     INSTRUCTIONS :
-    1. Utilise Google Search pour obtenir les données actuelles (effectifs, blessures, transferts).
-    2. Analyse la dynamique des deux équipes.
-    3. Rédige un rapport professionnel en ${language === 'fr' ? 'français' : 'anglais'}.
+    1. Utilise Google Search pour obtenir les données actuelles (squads, blessures, transferts).
+    2. Vérifie l'heure exacte du match à Paris.
+    3. Rédige un rapport technique sobre en ${language === 'fr' ? 'français' : 'anglais'}.
 
     FORMAT JSON :
     {
       "detailedAnalysis": "...",
       "successProbability": "XX%",
       "riskAssessment": "Low"|"Medium"|"High",
-      "matchDate": "...",
-      "matchTime": "...",
+      "matchDate": "DD/MM/2025",
+      "matchTime": "HH:MM",
       "aiOpinion": "..."
     }`;
 
