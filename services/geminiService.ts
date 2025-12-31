@@ -44,15 +44,17 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
   try {
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `DATE ET HEURE ACTUELLE À PARIS : ${timeNow}. 
-    MISSION : Trouve 9 matchs RÉELS prévus pour aujourd'hui ou demain.
-    RÉPARTITION OBLIGATOIRE : 3 Football, 3 Basketball, 3 Tennis.
-    SOURCES : Utilise Google Search pour vérifier les heures de coup d'envoi (FUSEAU PARIS).
+    MISSION : Trouve 9 matchs RÉELS prévus pour AUJOURD'HUI.
+    RÉPARTITION STRICTE : 3 Football, 3 Basketball, 3 Tennis.
     
-    IMPORTANT : Les heures doivent être EXACTES (heure française).
-    
+    INSTRUCTIONS CRITIQUES :
+    1. Utilise Google Search pour vérifier les horaires RÉELS de coup d'envoi.
+    2. Les heures DOIVENT être au fuseau Europe/Paris (Heure française).
+    3. Ne propose que des matchs qui n'ont pas encore commencé.
+
     FORMAT JSON UNIQUE : 
     {"picks": [
-      {"sport": "football|basketball|tennis", "match": "A vs B", "betType": "...", "probability": "XX%", "analysis": "...", "confidence": "High", "matchDate": "DD/MM/2025", "matchTime": "HH:MM"}
+      {"sport": "football|basketball|tennis", "match": "Equipe A vs Equipe B", "betType": "Pari suggéré", "probability": "XX%", "analysis": "Brève analyse technique", "confidence": "High", "matchDate": "DD/MM/2025", "matchTime": "HH:MM"}
     ]}`;
 
     const response = await ai.models.generateContent({
@@ -67,13 +69,14 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
     const result = extractJson(response.text || "");
     return result.picks || [];
   } catch (error) {
+    console.error("DailyPicks Error:", error);
     return [];
   }
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
   const apiKey = await getAPIKey();
-  if (!apiKey) throw new Error("Erreur de configuration.");
+  if (!apiKey) throw new Error("Clé API manquante.");
 
   const timeNow = getParisContext();
 
@@ -82,12 +85,12 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     const prompt = `ANALYSEUR NEXTWIN EXPERT.
     MATCH : ${request.match} (${request.sport}). 
     PARI : ${request.betType}.
-    HEURE PARIS : ${timeNow}.
+    CONTEXTE PARIS : ${timeNow}.
 
     INSTRUCTIONS :
-    1. Utilise Google Search pour les données réelles (absents, enjeux).
-    2. Vérifie l'heure du match à Paris.
-    3. Rapport technique en ${language === 'fr' ? 'français' : 'anglais'}.
+    1. Recherche via Google Search les dernières infos (compositions, absents).
+    2. Identifie l'heure de coup d'envoi exacte à Paris.
+    3. Rédige un rapport pro en ${language === 'fr' ? 'français' : 'anglais'}.
 
     FORMAT JSON :
     {
@@ -115,6 +118,6 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
 
     return { ...result, sources };
   } catch (error: any) {
-    throw new Error("L'analyse n'a pas pu être générée.");
+    throw new Error("L'analyse a échoué. Veuillez vérifier votre connexion.");
   }
 };
