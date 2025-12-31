@@ -3,8 +3,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Service to interact with the NextWin AI engine for sports analysis and daily picks.
- * Optimized for French precision, CET/CEST time accuracy, roster integrity, and 2024/2025 season validation.
+ * Service to interact with the NextWin AI engine.
+ * Optimized for production with robust JSON parsing and error handling.
  */
 
 const responseSchema = {
@@ -12,99 +12,77 @@ const responseSchema = {
     properties: {
         detailedAnalysis: {
             type: Type.STRING,
-            description: "Analyse complète. Doit confirmer la ligue actuelle (2024/2025) et valider la présence des joueurs dans l'effectif actuel via Search.",
+            description: "Detailed analysis of the match and players.",
         },
         successProbability: {
             type: Type.STRING,
-            description: "Pourcentage de réussite (ex: '72%').",
+            description: "Percentage (e.g., '72%').",
         },
         riskAssessment: {
             type: Type.STRING,
-            description: "Niveau de risque (Low, Medium, High).",
+            description: "Risk level: Low, Medium, or High.",
         },
         matchDate: {
             type: Type.STRING,
-            description: "Date officielle du match en France (ex: 'Samedi 15 Mars 2025'). Ne pas utiliser de date américaine.",
+            description: "Official match date (French format).",
         },
         matchTime: {
             type: Type.STRING,
-            description: "Heure de coup d'envoi impérativement convertie en HEURE DE PARIS (CET/CEST) au format HH:mm. C'est critique pour les matchs US (NBA).",
+            description: "Kick-off time in Paris (HH:mm).",
         },
         aiOpinion: {
             type: Type.STRING,
-            description: "Verdict final professionnel."
+            description: "Professional verdict."
         }
     },
     required: ["detailedAnalysis", "successProbability", "riskAssessment", "aiOpinion", "matchDate", "matchTime"],
 };
 
-const dailyPicksSchema = {
-  type: Type.OBJECT,
-  properties: {
-    picks: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          sport: { type: Type.STRING, enum: ["football", "basketball", "tennis"] },
-          match: { type: Type.STRING },
-          betType: { type: Type.STRING },
-          probability: { type: Type.STRING },
-          analysis: { type: Type.STRING },
-          confidence: { type: Type.STRING, enum: ["High", "Very High"] },
-          matchDate: { type: Type.STRING, description: "Date en France (CET/CEST)." },
-          matchTime: { type: Type.STRING, description: "Heure précise de Paris (HH:mm)." }
-        },
-        required: ["sport", "match", "betType", "probability", "analysis", "confidence", "matchDate", "matchTime"]
-      }
+/**
+ * Helper to safely extract JSON from AI response text, handling potential markdown wrappers.
+ */
+const safeParseJson = (text: string) => {
+    try {
+        // Remove markdown code blocks if present
+        const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(cleaned);
+    } catch (e) {
+        console.error("Failed to parse AI JSON:", text);
+        throw new Error("Invalid response format from AI");
     }
-  },
-  required: ["picks"]
 };
 
-/**
- * Gets a precise localized time context for Paris to help the AI anchor its search results.
- */
 const getParisTimeContext = () => {
     const now = new Date();
-    const formatter = new Intl.DateTimeFormat('fr-FR', {
+    return new Intl.DateTimeFormat('fr-FR', {
         timeZone: 'Europe/Paris',
         dateStyle: 'full',
         timeStyle: 'medium',
-    });
-    return formatter.format(now);
+    }).format(now);
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const languageFullName = language === 'fr' ? 'French' : 'English';
   const timeContext = getParisTimeContext();
+  const languageFullName = language === 'fr' ? 'French' : 'English';
 
-  const prompt = `
-    RÔLE SYSTÈME: Moteur NextWin v4.0. 
-    CONTEXTE TEMPOREL RÉEL (PARIS, FRANCE): ${timeContext}
-
-    PROTOCOLE "NEXTWIN TIME PRECISION" :
-    1. RECHERCHE SEARCH: Identifie 9 matchs réels prévus dans les 24-48h.
-    2. CONVERSION HORAIRE OBLIGATOIRE: Trouve l'heure locale du match et convertis-la systématiquement en HEURE DE PARIS (CET/CEST). 
-       Exemple: Un match NBA à 8 PM ET doit être converti en 02:00 (le lendemain) à Paris.
-    3. VÉRIFICATION ROSTERS: Confirme l'effectif 2024/2025 avant toute mention de joueur.
-    4. RÉPONSE: JSON en ${languageFullName}. Utilise uniquement l'heure française.
-  `;
+  const prompt = `System: NextWin Engine. Paris Time: ${timeContext}. 
+  Find 9 real upcoming matches (3 per sport) for next 48h. 
+  Convert all times to Paris Time (CET/CEST). 
+  Check actual 2024/2025 rosters. 
+  Respond in ${languageFullName}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', 
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
-        responseSchema: dailyPicksSchema,
       }
     });
 
-    const text = response.text || "{}";
-    const result = JSON.parse(text.trim());
+    const result = safeParseJson(response.text || "{}");
     return result.picks || [];
   } catch (error) {
     console.error("Error fetching daily picks:", error);
@@ -112,53 +90,22 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
   }
 };
 
-const generateMockAnalysis = (request: AnalysisRequest, language: 'fr' | 'en' = 'en'): AnalysisResult['response'] => {
-    return {
-        detailedAnalysis: language === 'fr' 
-            ? `Analyse experte NextWin pour ${request.match}.` 
-            : `NextWin expert analysis for ${request.match}.`,
-        successProbability: "65%",
-        riskAssessment: 'Medium',
-        matchDate: "À vérifier",
-        matchTime: "--:--",
-        aiOpinion: "Données indisponibles.",
-        sources: []
-    };
-};
-
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
-  if (!process.env.API_KEY) return generateMockAnalysis(request, language);
+  if (!process.env.API_KEY) throw new Error("API Key missing");
   
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const languageFullName = language === 'fr' ? 'French' : 'English';
   const timeContext = getParisTimeContext();
+  const languageFullName = language === 'fr' ? 'French' : 'English';
 
-  const prompt = `
-    RÔLE: Expert Analyste NextWin PRO - Spécialiste Data, Transferts et Prévisions Stratégiques.
+  const prompt = `Expert Analyst NextWin PRO. Current Paris Time: ${timeContext}.
+    Match: ${request.match} (${request.sport}). Bet Type: ${request.betType}.
     
-    CONTEXTE TEMPOREL (PARIS, FRANCE): ${timeContext}
-
-    PROTOCOLE "NEXTWIN PRECISION & PREDICTION" :
-    1. VÉRIFICATION TEMPORELLE (IMPÉRATIF) :
-       - Recherche la date et l'heure locale exacte de la PROCHAINE rencontre entre ces deux entités : ${request.match}.
-       - CONVERTIS CET HORAIRE EN HEURE DE PARIS (CET/CEST).
-       - SI LE MATCH N'A PAS LIEU AUJOURD'HUI (${timeContext}), TU DOIS ANALYSER LA PROCHAINE DATE DISPONIBLE.
-       - NE RÉPONDS JAMAIS "qu'il n'y a pas de match aujourd'hui". Les clients paient pour des prévisions sur les futures rencontres.
-       - Si le match est fini, analyse le prochain. Si c'est un match futur (même dans 1 mois), fournis l'analyse complète basée sur les données actuelles.
-
-    2. VÉRIFICATION EFFECTIFS (Saison 2024/2025) : 
-       - Utilise Search pour confirmer le club actuel de chaque joueur et la forme récente des équipes.
-       - Toute hallucination sur un effectif est une faute grave.
-
-    3. ANALYSE :
-       - Sport: ${request.sport}
-       - Match: ${request.match}
-       - Pari: ${request.betType}
-
-    RÉPONDRE EN JSON (${languageFullName}).
-    Le champ 'matchTime' doit être l'heure de Paris (format HH:mm).
-    Le champ 'matchDate' doit être la date réelle trouvée via Search.
-  `;
+    1. SEARCH: Find the EXACT next date/time of this match.
+    2. CONVERT: Systematically convert match time to PARIS TIME (CET/CEST).
+    3. DATA: Verify 2024/2025 rosters, injuries, and recent form.
+    4. RESPOND: JSON in ${languageFullName}.
+    
+    IMPORTANT: If the match is in the future (even 1 month away), provide the full analysis.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -168,33 +115,31 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
             tools: [{ googleSearch: {} }],
             responseMimeType: "application/json",
             responseSchema: responseSchema,
-            thinkingConfig: { thinkingBudget: 12000 }
+            thinkingConfig: { thinkingBudget: 15000 }
         }
     });
     
-    const text = response.text || "{}";
-    const result = JSON.parse(text.trim());
+    const result = safeParseJson(response.text || "{}");
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const sources: GroundingSource[] = groundingChunks 
         ? groundingChunks.map((chunk: any) => ({
-            title: chunk.web?.title || 'Donnée Officielle',
+            title: chunk.web?.title || 'Data Source',
             uri: chunk.web?.uri || '#'
           })).filter((s: any) => s.uri !== '#')
         : [];
 
     return { ...result, sources };
   } catch (error) {
-    console.error("Error fetching analysis:", error);
-    return generateMockAnalysis(request, language);
+    console.error("Analysis Error:", error);
+    throw error;
   }
 };
 
 export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'dashboard' | 'tactical' = 'dashboard'): Promise<string | undefined> => {
-  if (!process.env.API_KEY) return undefined;
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const visualPrompt = style === 'dashboard' 
-    ? `Pro sports analytics dashboard for "${request.match}" (${request.sport}). Futuristic UI, stats, orange/blue theme.`
-    : `Tactical top-down sports view for "${request.match}" (${request.sport}). Glowing neon arrows and heatmaps.`;
+    ? `Professional sports analytics dashboard for "${request.match}" (${request.sport}). High-tech UI, statistics, dark mode with orange accents.`
+    : `Top-down tactical view of "${request.match}" (${request.sport}). Glowing neon arrows, player zones, heatmaps.`;
 
   try {
     const response = await ai.models.generateContent({
