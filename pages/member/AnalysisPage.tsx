@@ -118,7 +118,7 @@ const AnalysisPage: React.FC = () => {
 
         setAnalysisResult(result);
     } catch (err: any) {
-        setError("L'IA n'a pas pu finaliser l'analyse. Veuillez vérifier les noms des équipes ou réessayer dans quelques instants.");
+        setError(err.message || "Erreur d'analyse. Veuillez vérifier votre connexion ou la configuration de la clé API.");
         console.error(err);
     } finally {
         setIsLoading(false);
@@ -138,7 +138,6 @@ const AnalysisPage: React.FC = () => {
       <h1 className="text-4xl font-bold text-center text-white mb-8">{t('analysis_title')}</h1>
       
       <div className="grid lg:grid-cols-12 gap-8">
-        {/* Form Column */}
         <div className="lg:col-span-5">
             <Card className="border-gray-800 shadow-2xl">
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -160,17 +159,15 @@ const AnalysisPage: React.FC = () => {
                     )}
 
                     <Button type="submit" disabled={isLoading || !selectedSport || !entity1 || !entity2} className="w-full py-5 text-lg font-black uppercase tracking-widest shadow-xl shadow-orange-500/20">
-                        {isLoading ? "Traitement IA..." : t('analysis_launch')}
+                        {isLoading ? "Analyse en cours..." : t('analysis_launch')}
                     </Button>
                     <p className="text-[10px] text-gray-500 text-center font-bold uppercase tracking-widest">NextWin Engine v4.0 Active</p>
                 </form>
             </Card>
         </div>
         
-        {/* Result Column */}
         <div className="lg:col-span-7">
             <Card className="min-h-[550px] relative overflow-hidden flex flex-col border-gray-800 bg-[#1C1C2B]">
-            {/* Background pattern */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
 
             {isLoading ? (
@@ -181,27 +178,30 @@ const AnalysisPage: React.FC = () => {
                             <span className="text-xl animate-pulse">🧠</span>
                         </div>
                     </div>
-                    <div className="text-center space-y-2">
+                    <div className="text-center space-y-2 px-4">
                         <p className="text-orange-400 font-black text-sm tracking-[0.2em] uppercase">{loadingSteps[loadingStep]}</p>
-                        <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest">Le processus peut prendre jusqu'à 20 secondes</p>
+                        <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest">Recherche web et analyse statistique en cours...</p>
                     </div>
                 </div>
             ) : error ? (
                 <div className="flex-grow flex flex-col items-center justify-center p-10 text-center space-y-6">
                     <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-4xl border border-red-500/20">⚠️</div>
                     <div>
-                        <h3 className="text-xl font-bold text-white mb-2">Erreur d'analyse</h3>
-                        <p className="text-gray-400 text-sm max-w-sm">{error}</p>
+                        <h3 className="text-xl font-bold text-white mb-2">Analyse Interrompue</h3>
+                        <p className="text-red-400/80 text-sm max-w-sm font-medium">{error}</p>
+                        {error.includes("Clé API") && (
+                            <p className="text-gray-500 text-xs mt-4">Vérifiez vos variables d'environnement Vercel et refaites un déploiement.</p>
+                        )}
                     </div>
                     <Button onClick={() => setError(null)} variant="secondary" className="text-xs uppercase font-black">Réessayer</Button>
                 </div>
             ) : analysisResult ? (
-                <div className="space-y-6 relative z-10 animate-fadeIn p-2">
+                <div className="space-y-6 relative z-10 animate-fadeIn p-4">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-2xl font-black text-white">{t('analysis_result_title')}</h2>
                         <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-full">
                             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-[10px] uppercase font-bold text-green-400">Analyse Certifiée</span>
+                            <span className="text-[10px] uppercase font-bold text-green-400">Certifié</span>
                         </div>
                     </div>
 
@@ -210,12 +210,12 @@ const AnalysisPage: React.FC = () => {
                             <div className="bg-orange-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl">📅</div>
                             <div>
                                 <p className="text-[10px] uppercase font-black tracking-widest text-orange-400/70">{t('analysis_match_info')}</p>
-                                <p className="text-white font-black text-base">{analysisResult.matchDate} à {analysisResult.matchTime}</p>
+                                <p className="text-white font-black text-base">{analysisResult.matchDate || 'Aujourd\'hui'} à {analysisResult.matchTime || '--:--'}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-gray-900/40 p-5 rounded-2xl border border-white/5">
                             <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black mb-2">{t('analysis_probability')}</h3>
                             <p className="text-4xl font-black text-white mb-3">{analysisResult.successProbability}</p>
@@ -240,16 +240,16 @@ const AnalysisPage: React.FC = () => {
                     </div>
 
                     {analysisResult.sources && analysisResult.sources.length > 0 && (
-                        <div className="px-1">
-                            <h3 className="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-black mb-3">{t('analysis_sources')}</h3>
+                        <div>
+                            <h3 className="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-black mb-3 px-1">{t('analysis_sources')}</h3>
                             <div className="flex flex-wrap gap-2">
-                                {analysisResult.sources.map((source, i) => (
+                                {analysisResult.sources.slice(0, 5).map((source, i) => (
                                     <a 
                                         key={i} 
                                         href={source.uri} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-[9px] font-bold bg-gray-800 hover:bg-gray-700 text-gray-400 px-3 py-1.5 rounded-lg border border-gray-700 transition-all truncate max-w-[180px]"
+                                        className="text-[9px] font-bold bg-gray-800 hover:bg-gray-700 text-gray-400 px-3 py-1.5 rounded-lg border border-gray-700 transition-all truncate max-w-[200px]"
                                     >
                                         🔗 {source.title}
                                     </a>
@@ -266,40 +266,28 @@ const AnalysisPage: React.FC = () => {
                         </p>
                     </div>
 
-                    {/* AI Visual Analysis Section */}
                     <div className="pt-6 border-t border-gray-800">
-                        <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black mb-4">MODÉLISATION GRAPHIQUE</h3>
+                        <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black mb-4">VISUELS IA</h3>
                         <div className="grid sm:grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-2">
-                                {!analysisResult.visuals?.dashboard && loadingVisual !== 'dashboard' ? (
-                                    <Button variant="secondary" onClick={() => handleGenerateVisual('dashboard')} className="w-full text-[10px] font-black uppercase tracking-widest py-3 rounded-xl bg-white/5 border border-white/10">
-                                        📊 Dashboard Stats
-                                    </Button>
-                                ) : loadingVisual === 'dashboard' ? (
-                                    <div className="flex flex-col items-center justify-center h-40 bg-gray-900/50 rounded-xl border border-gray-800 gap-2">
-                                        <Spinner />
-                                    </div>
-                                ) : analysisResult.visuals?.dashboard && (
-                                    <div className="rounded-xl overflow-hidden border border-gray-700 shadow-2xl">
-                                        <img src={analysisResult.visuals.dashboard} alt="Dashboard" className="w-full h-auto" />
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                {!analysisResult.visuals?.tactical && loadingVisual !== 'tactical' ? (
-                                    <Button variant="secondary" onClick={() => handleGenerateVisual('tactical')} className="w-full text-[10px] font-black uppercase tracking-widest py-3 rounded-xl bg-white/5 border border-white/10">
-                                        🎯 Vue Tactique
-                                    </Button>
-                                ) : loadingVisual === 'tactical' ? (
-                                    <div className="flex flex-col items-center justify-center h-40 bg-gray-900/50 rounded-xl border border-gray-800 gap-2">
-                                        <Spinner />
-                                    </div>
-                                ) : analysisResult.visuals?.tactical && (
-                                    <div className="rounded-xl overflow-hidden border border-gray-700 shadow-2xl">
-                                        <img src={analysisResult.visuals.tactical} alt="Tactical View" className="w-full h-auto" />
-                                    </div>
-                                )}
-                            </div>
+                            {!analysisResult.visuals?.dashboard && loadingVisual !== 'dashboard' ? (
+                                <Button variant="secondary" onClick={() => handleGenerateVisual('dashboard')} className="w-full text-[10px] font-black uppercase tracking-widest py-3 rounded-xl bg-white/5 border border-white/10">
+                                    📊 Dashboard Stats
+                                </Button>
+                            ) : loadingVisual === 'dashboard' ? (
+                                <div className="flex items-center justify-center h-40 bg-gray-900/50 rounded-xl border border-gray-800"><Spinner /></div>
+                            ) : analysisResult.visuals?.dashboard && (
+                                <div className="rounded-xl overflow-hidden border border-gray-700 shadow-2xl"><img src={analysisResult.visuals.dashboard} alt="Stats" className="w-full h-auto" /></div>
+                            )}
+                            
+                            {!analysisResult.visuals?.tactical && loadingVisual !== 'tactical' ? (
+                                <Button variant="secondary" onClick={() => handleGenerateVisual('tactical')} className="w-full text-[10px] font-black uppercase tracking-widest py-3 rounded-xl bg-white/5 border border-white/10">
+                                    🎯 Vue Tactique
+                                </Button>
+                            ) : loadingVisual === 'tactical' ? (
+                                <div className="flex items-center justify-center h-40 bg-gray-900/50 rounded-xl border border-gray-800"><Spinner /></div>
+                            ) : analysisResult.visuals?.tactical && (
+                                <div className="rounded-xl overflow-hidden border border-gray-700 shadow-2xl"><img src={analysisResult.visuals.tactical} alt="Tactique" className="w-full h-auto" /></div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -307,7 +295,6 @@ const AnalysisPage: React.FC = () => {
                 <div className="flex-grow flex flex-col items-center justify-center py-20 text-center opacity-30">
                     <div className="w-24 h-24 bg-gray-800 rounded-3xl flex items-center justify-center text-5xl mb-6 grayscale">🔍</div>
                     <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-xs">{t('analysis_result_placeholder')}</p>
-                    <p className="text-gray-500 text-[10px] font-bold mt-4 uppercase tracking-widest">Prêt pour la prochaine prédiction</p>
                 </div>
             )}
             </Card>

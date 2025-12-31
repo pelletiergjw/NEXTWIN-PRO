@@ -10,6 +10,7 @@ export default defineConfig({
     emptyOutDir: true
   },
   define: {
-    'process.env': {}
+    // Permet d'injecter la clé API de l'environnement Vercel dans le bundle client
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
   }
 });
