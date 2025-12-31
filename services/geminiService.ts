@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Service NextWin AI - Moteur v4.5 "Real-Time Verified"
+ * Service NextWin AI - Moteur v4.8 "Ultra-Reliable"
  */
 
 const getAPIKey = () => {
@@ -14,7 +14,6 @@ const getAPIKey = () => {
     return (!key || key === "undefined") ? null : key;
 };
 
-// Récupère l'heure exacte de Paris pour synchroniser l'IA
 const getParisContext = () => {
     return new Intl.DateTimeFormat('fr-FR', {
         timeZone: 'Europe/Paris',
@@ -25,6 +24,20 @@ const getParisContext = () => {
         minute: '2-digit',
         weekday: 'long'
     }).format(new Date());
+};
+
+const parseGeminiError = (error: any): string => {
+    const errorStr = error?.toString() || "";
+    if (errorStr.includes("429") || errorStr.includes("RESOURCE_EXHAUSTED")) {
+        return "Quota API dépassé (Erreur 429). Si vous êtes en plan gratuit, Google limite le nombre de requêtes par minute. Patientez 60 secondes ou passez à un plan 'Pay-as-you-go' sur Google AI Studio.";
+    }
+    if (errorStr.includes("403")) {
+        return "Accès refusé. Votre clé API n'a pas les droits nécessaires ou est restreinte géographiquement.";
+    }
+    if (errorStr.includes("API_KEY_INVALID")) {
+        return "Clé API invalide. Vérifiez la variable d'environnement sur Vercel.";
+    }
+    return error.message || "Une erreur inattendue est survenue avec le moteur IA.";
 };
 
 const extractJsonFromText = (text: string) => {
@@ -39,10 +52,10 @@ const extractJsonFromText = (text: string) => {
         try {
             return JSON.parse(cleaned.substring(start, end + 1));
         } catch (e) {
-            throw new Error("Erreur de structure des données.");
+            throw new Error("Erreur de parsing des données sportives.");
         }
     }
-    throw new Error("Données structurées introuvables.");
+    throw new Error("Structure de données introuvable.");
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
@@ -54,15 +67,13 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
     const timeNow = getParisContext();
     const langLabel = language === 'fr' ? 'français' : 'english';
 
-    const prompt = `CONTEXTE TEMPOREL : Nous sommes le ${timeNow} (Heure de Paris).
-    MISSION : Trouve 9 matchs RÉELS prévus entre aujourd'hui et après-demain via Google Search.
-    CONSIGNES DE FIABILITÉ :
-    1. Vérifie les dates et heures exactes sur des sites officiels. 
-    2. Convertis impérativement les heures au fuseau horaire de PARIS (CET/CEST).
-    3. Vérifie l'effectif actuel 2024/2025. Ne cite aucun joueur transféré (ex: Louis Mafouta n'est plus à Amiens).
-    
-    RETOURNE UNIQUEMENT CE JSON :
-    {"picks": [{"sport": "football|basketball|tennis", "match": "Equipe A vs Equipe B", "betType": "...", "probability": "XX%", "analysis": "Analyse courte en ${langLabel}", "confidence": "High", "matchDate": "JJ/MM/2025", "matchTime": "HH:MM"}]}`;
+    const prompt = `URGENT : Nous sommes le ${timeNow}. 
+    Utilise Google Search pour trouver 9 matchs réels PRÉVUS entre aujourd'hui et après-demain.
+    CONSIGNES CRITIQUES :
+    1. HEURES : Convertis toutes les heures au fuseau horaire de PARIS.
+    2. EFFECTIFS : Vérifie l'effectif actuel 2024/2025. Interdiction de citer des joueurs transférés.
+    3. FORMAT : Retourne UNIQUEMENT le JSON :
+    {"picks": [{"sport": "football|basketball|tennis", "match": "Equipe A vs Equipe B", "betType": "...", "probability": "XX%", "analysis": "Info en ${langLabel}", "confidence": "High", "matchDate": "JJ/MM/2025", "matchTime": "HH:MM"}]}`;
 
     const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview', 
@@ -79,32 +90,33 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
   const apiKey = getAPIKey();
-  if (!apiKey) throw new Error("Clé API manquante dans l'environnement Vercel.");
+  if (!apiKey) throw new Error("Clé API non trouvée.");
 
   try {
     const ai = new GoogleGenAI({ apiKey });
     const timeNow = getParisContext();
     const langLabel = language === 'fr' ? 'français' : 'english';
 
-    const prompt = `ANALYSEUR EXPERT NEXTWIN. 
-    Match : ${request.match}. Sport : ${request.sport}. Type de pari : ${request.betType}.
-    Context : ${timeNow} (Heure de Paris).
+    const prompt = `SYSTEM NEXTWIN v4.8 - EXPERT EN ANALYSE SPORTIVE TEMPS RÉEL.
+    MATCH : ${request.match}.
+    SPORT : ${request.sport}.
+    PARI : ${request.betType}.
+    CONTEXTE : ${timeNow} (Heure de Paris).
 
-    PROTOCOLE DE VÉRIFICATION OBLIGATOIRE :
-    1. UTILISE GOOGLE SEARCH pour trouver la date et l'heure EXACTES du match.
-    2. VÉRIFIE LES TRANSFERTS 2024/2025 : Assure-toi que les joueurs cités sont bien présents dans le club (ex: Pas de Mafouta à Amiens).
-    3. VÉRIFIE LES BLESSURES ET SUSPENSIONS actuelles pour ce match précis.
-    4. ANALYSE : Propose une analyse technique crédible basée sur ces faits réels.
-    5. HEURE : Affiche l'heure uniquement au format français (Paris).
+    PROCÉDURE DE VÉRIFICATION ANTI-HALLUCINATION :
+    1. RECHERCHE WEB : Scanne les dernières infos (news de moins de 12h).
+    2. EFFECTIFS 2024/2025 : Vérifie la présence des joueurs clés. (Ex: Si footballeur transféré cet été, ne pas le citer pour son ancien club).
+    3. INFIRMERIE : Liste les blessés et suspendus réels pour ce match.
+    4. HORAIRE : Trouve l'heure officielle et affiche-la impérativement à l'heure de PARIS.
 
-    FORMAT DE SORTIE (JSON UNIQUEMENT) :
+    STRUCTURE DU JSON (OBLIGATOIRE) :
     {
-      "detailedAnalysis": "Analyse pro en ${langLabel} (min 150 mots) incluant blessés et forme réelle...",
+      "detailedAnalysis": "Analyse technique pro en ${langLabel} basée sur les faits réels (blessures, transferts, enjeux)...",
       "successProbability": "XX%",
       "riskAssessment": "Low"|"Medium"|"High",
       "matchDate": "JJ/MM/2025",
-      "matchTime": "HH:MM",
-      "aiOpinion": "Conseil d'expert en ${langLabel}..."
+      "matchTime": "HH:MM (Heure Paris)",
+      "aiOpinion": "Conseil d'expert stratégique..."
     }
     Langue : ${langLabel}.`;
 
@@ -117,12 +129,12 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     const result = extractJsonFromText(response.text || "{}");
     const sources: GroundingSource[] = (response.candidates?.[0]?.groundingMetadata?.groundingChunks || [])
         .filter((c: any) => c.web?.uri)
-        .map((c: any) => ({ title: c.web.title || 'Info Match', uri: c.web.uri }));
+        .map((c: any) => ({ title: c.web.title || 'Source vérifiée', uri: c.web.uri }));
 
     return { ...result, sources };
   } catch (error: any) {
-    console.error("Analysis Error:", error);
-    throw new Error(error.message || "Erreur de communication avec le moteur de recherche sportif.");
+    const friendlyError = parseGeminiError(error);
+    throw new Error(friendlyError);
   }
 };
 
@@ -133,7 +145,7 @@ export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'd
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: `High-tech sports visual for ${request.match}, professional betting UI style, neon highlights.` }] },
+      contents: { parts: [{ text: `Professional tactical sports visualization for ${request.match}, high-end betting analytics style.` }] },
     });
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
