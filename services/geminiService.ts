@@ -1,90 +1,113 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Récupération de la clé API via le système d'environnement de Vite.
- * VITE_API_KEY est injecté pendant le build sur GitHub Actions.
+ * Système NextWin Pro v5 - Architecture à Structure Forcée
+ * Utilise responseSchema pour garantir la validité des données.
  */
-const getApiKey = (): string => {
-    // @ts-ignore - Les variables sont injectées par le build
-    const key = import.meta.env.VITE_API_KEY || process.env.API_KEY || "";
-    return key.trim();
+
+const getAI = () => {
+    const key = process.env.API_KEY || "";
+    return new GoogleGenAI({ apiKey: key });
 };
 
-const getAIInstance = () => {
-    const apiKey = getApiKey();
-    if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
-        throw new Error("API_KEY_MISSING_IN_BUILD");
-    }
-    return new GoogleGenAI({ apiKey });
-};
-
-const extractJson = (text: string) => {
-    try {
-        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const start = cleanText.indexOf('{');
-        const end = cleanText.lastIndexOf('}');
-        if (start !== -1 && end !== -1) {
-            return JSON.parse(cleanText.substring(start, end + 1));
+// Schéma pour les 9 Pronostics du Jour
+const dailyPicksSchema = {
+    type: Type.OBJECT,
+    properties: {
+        picks: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    sport: { type: Type.STRING, description: "football, basketball or tennis" },
+                    match: { type: Type.STRING, description: "Team A vs Team B" },
+                    betType: { type: Type.STRING },
+                    probability: { type: Type.STRING, description: "Percentage with % sign" },
+                    analysis: { type: Type.STRING, description: "Short expert analysis" },
+                    confidence: { type: Type.STRING, description: "High or Very High" },
+                    matchDate: { type: Type.STRING, description: "DD/MM" },
+                    matchTime: { type: Type.STRING, description: "HH:MM" }
+                },
+                required: ["sport", "match", "betType", "probability", "analysis", "matchDate", "matchTime"]
+            }
         }
-    } catch (e) {
-        console.error("JSON Parse Error", e);
-    }
-    return null;
+    },
+    required: ["picks"]
+};
+
+// Schéma pour l'Analyse de Match Personnalisée
+const analysisSchema = {
+    type: Type.OBJECT,
+    properties: {
+        detailedAnalysis: { type: Type.STRING },
+        successProbability: { type: Type.STRING },
+        riskAssessment: { type: Type.STRING, description: "Low, Medium or High" },
+        aiOpinion: { type: Type.STRING },
+        matchDate: { type: Type.STRING },
+        matchTime: { type: Type.STRING }
+    },
+    required: ["detailedAnalysis", "successProbability", "riskAssessment", "aiOpinion"]
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
     try {
-        const ai = getAIInstance();
+        const ai = getAI();
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Trouve 9 matchs de sport RÉELS pour aujourd'hui ou demain.
-            3 Football, 3 Basketball, 3 Tennis. 
-            Réponds UNIQUEMENT via ce format JSON :
-            { "picks": [ { "sport": "football", "match": "Equipe A vs Equipe B", "betType": "Victoire A", "probability": "75%", "analysis": "...", "confidence": "High", "matchDate": "DD/MM", "matchTime": "HH:MM" } ] }`,
+            contents: `Trouve exactement 9 matchs de sport RÉELS pour aujourd'hui ou demain (3 Football, 3 Basketball, 3 Tennis). 
+            Utilise Google Search pour vérifier les cotes et les horaires réels.
+            Langue de réponse : ${language === 'fr' ? 'Français' : 'Anglais'}.`,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Tu es l'IA experte de NextWin. Utilise Google Search pour trouver des matchs réels."
+                responseMimeType: "application/json",
+                responseSchema: dailyPicksSchema,
+                systemInstruction: "Tu es le moteur de données sportives NextWin. Tu ne fournis que des données réelles et vérifiées. Tu suis strictement le format JSON demandé."
             }
         });
 
-        const result = extractJson(response.text || "");
-        return result?.picks || [];
+        // Avec responseSchema, response.text est GARANTI d'être un JSON valide
+        const result = JSON.parse(response.text || "{\"picks\":[]}");
+        return result.picks || [];
     } catch (error: any) {
-        console.error("Gemini Error:", error);
-        throw error;
+        console.error("Critical API Error (DailyPicks):", error);
+        throw new Error("MOTEUR_INDISPONIBLE");
     }
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
     try {
-        const ai = getAIInstance();
+        const ai = getAI();
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Analyse expert : ${request.match} (${request.betType}). 
-            Réponds UNIQUEMENT en JSON avec : detailedAnalysis, successProbability, riskAssessment, aiOpinion, matchDate, matchTime.`,
+            contents: `Analyse expert pour le match : ${request.match}. Pari ciblé : ${request.betType}. Sport : ${request.sport}.
+            Recherche les blessures récentes, la météo et les flux de cotes.
+            Langue : ${language === 'fr' ? 'Français' : 'Anglais'}.`,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Expert analyste sportif NextWin."
+                responseMimeType: "application/json",
+                responseSchema: analysisSchema,
+                systemInstruction: "Tu es l'analyste en chef de NextWin. Ta mission est de déceler l'avantage statistique. Sois précis et technique."
             }
         });
 
-        const result = extractJson(response.text || "{}");
+        const result = JSON.parse(response.text || "{}");
         const sources: GroundingSource[] = (response.candidates?.[0]?.groundingMetadata?.groundingChunks || [])
             .filter((c: any) => c.web?.uri)
             .map((c: any) => ({ title: c.web.title || 'Source', uri: c.web.uri }));
 
         return {
-            detailedAnalysis: result?.detailedAnalysis || "Analyse indisponible.",
-            successProbability: result?.successProbability || "50%",
-            riskAssessment: result?.riskAssessment || "Medium",
-            aiOpinion: result?.aiOpinion || "Analyse en cours...",
-            matchDate: result?.matchDate || "N/A",
-            matchTime: result?.matchTime || "N/A",
+            detailedAnalysis: result.detailedAnalysis,
+            successProbability: result.successProbability,
+            riskAssessment: result.riskAssessment,
+            aiOpinion: result.aiOpinion,
+            matchDate: result.matchDate || "N/A",
+            matchTime: result.matchTime || "N/A",
             sources
         };
     } catch (error: any) {
-        throw error;
+        console.error("Critical API Error (Analysis):", error);
+        throw new Error("ERREUR_ANALYSE_MOTEUR");
     }
 };
