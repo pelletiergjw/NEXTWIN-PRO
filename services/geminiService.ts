@@ -8,7 +8,6 @@ import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from
  */
 
 const getAPIKey = async () => {
-    // Utilisation de la clé API configurée dans l'environnement Vercel
     const key = process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
     if (!key || key === "undefined" || key === "null") return null;
     return key;
@@ -44,17 +43,16 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    // Prompt ultra-direct pour forcer les 9 matchs et les heures de Paris
     const prompt = `DATE ET HEURE ACTUELLE À PARIS : ${timeNow}. 
     MISSION : Trouve 9 matchs RÉELS prévus pour aujourd'hui ou demain.
     RÉPARTITION OBLIGATOIRE : 3 Football, 3 Basketball, 3 Tennis.
-    SOURCES : Utilise Google Search pour vérifier les heures de coup d'envoi (Fuseau horaire Paris).
+    SOURCES : Utilise Google Search pour vérifier les heures de coup d'envoi (FUSEAU PARIS).
     
-    IMPORTANT : Les heures doivent être exactes selon l'heure de Paris.
+    IMPORTANT : Les heures doivent être EXACTES (heure française).
     
     FORMAT JSON UNIQUE : 
     {"picks": [
-      {"sport": "football|basketball|tennis", "match": "A vs B", "betType": "...", "probability": "XX%", "analysis": "Brief analysis...", "confidence": "High", "matchDate": "DD/MM/2025", "matchTime": "HH:MM"}
+      {"sport": "football|basketball|tennis", "match": "A vs B", "betType": "...", "probability": "XX%", "analysis": "...", "confidence": "High", "matchDate": "DD/MM/2025", "matchTime": "HH:MM"}
     ]}`;
 
     const response = await ai.models.generateContent({
@@ -69,7 +67,6 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
     const result = extractJson(response.text || "");
     return result.picks || [];
   } catch (error) {
-    console.error("DailyPicks Error:", error);
     return [];
   }
 };
@@ -85,12 +82,12 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     const prompt = `ANALYSEUR NEXTWIN EXPERT.
     MATCH : ${request.match} (${request.sport}). 
     PARI : ${request.betType}.
-    CONTEXTE TEMPOREL PARIS : ${timeNow}.
+    HEURE PARIS : ${timeNow}.
 
     INSTRUCTIONS :
-    1. Utilise Google Search pour obtenir les données actuelles (squads, blessures, transferts).
-    2. Vérifie l'heure exacte du match à Paris.
-    3. Rédige un rapport technique sobre en ${language === 'fr' ? 'français' : 'anglais'}.
+    1. Utilise Google Search pour les données réelles (absents, enjeux).
+    2. Vérifie l'heure du match à Paris.
+    3. Rapport technique en ${language === 'fr' ? 'français' : 'anglais'}.
 
     FORMAT JSON :
     {
@@ -118,22 +115,6 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
 
     return { ...result, sources };
   } catch (error: any) {
-    throw new Error("L'analyse n'a pas pu être générée. Veuillez réessayer.");
+    throw new Error("L'analyse n'a pas pu être générée.");
   }
-};
-
-export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'dashboard' | 'tactical' = 'dashboard'): Promise<string | undefined> => {
-  const apiKey = await getAPIKey();
-  if (!apiKey) return undefined;
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: `Professional sports tactical visualization for ${request.match}.` }] },
-    });
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    }
-  } catch (e) {}
-  return undefined;
 };
