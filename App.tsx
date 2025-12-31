@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
@@ -27,6 +27,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 import BankrollFeaturePage from './pages/public/BankrollFeaturePage';
 
 const App: React.FC = () => {
+  const { pathname } = useLocation();
+
+  // Reset scroll to top on every route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#10101A]">
       <Header />
