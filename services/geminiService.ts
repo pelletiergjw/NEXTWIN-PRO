@@ -1,54 +1,34 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Service to interact with the NextWin AI engine.
- * Optimized for production with robust JSON parsing and error handling.
+ * Service NextWin AI - Version Pro Optimisée
  */
-
-const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-        detailedAnalysis: {
-            type: Type.STRING,
-            description: "Detailed analysis of the match and players.",
-        },
-        successProbability: {
-            type: Type.STRING,
-            description: "Percentage (e.g., '72%').",
-        },
-        riskAssessment: {
-            type: Type.STRING,
-            description: "Risk level: Low, Medium, or High.",
-        },
-        matchDate: {
-            type: Type.STRING,
-            description: "Official match date (French format).",
-        },
-        matchTime: {
-            type: Type.STRING,
-            description: "Kick-off time in Paris (HH:mm).",
-        },
-        aiOpinion: {
-            type: Type.STRING,
-            description: "Professional verdict."
-        }
-    },
-    required: ["detailedAnalysis", "successProbability", "riskAssessment", "aiOpinion", "matchDate", "matchTime"],
-};
 
 /**
- * Helper to safely extract JSON from AI response text, handling potential markdown wrappers.
+ * Robustly extracts JSON from a string that might contain markdown or additional text.
+ * Essential when using search tools which can pollute the response.
  */
-const safeParseJson = (text: string) => {
+const extractJsonFromText = (text: string) => {
     try {
-        // Remove markdown code blocks if present
-        const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        return JSON.parse(cleaned);
+        // Try simple parse first
+        return JSON.parse(text);
     } catch (e) {
-        console.error("Failed to parse AI JSON:", text);
-        throw new Error("Invalid response format from AI");
+        // Find the first '{' and the last '}' to isolate JSON block
+        const start = text.indexOf('{');
+        const end = text.lastIndexOf('}');
+        
+        if (start !== -1 && end !== -1) {
+            const jsonCandidate = text.substring(start, end + 1);
+            try {
+                return JSON.parse(jsonCandidate);
+            } catch (innerError) {
+                console.error("Failed to parse extracted JSON block:", jsonCandidate);
+                throw new Error("Format JSON invalide");
+            }
+        }
+        throw new Error("Aucun bloc JSON détecté dans la réponse de l'IA");
     }
 };
 
@@ -62,30 +42,30 @@ const getParisTimeContext = () => {
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
+  if (!process.env.API_KEY) return [];
+  
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const timeContext = getParisTimeContext();
-  const languageFullName = language === 'fr' ? 'French' : 'English';
+  const langName = language === 'fr' ? 'Français' : 'English';
 
-  const prompt = `System: NextWin Engine. Paris Time: ${timeContext}. 
-  Find 9 real upcoming matches (3 per sport) for next 48h. 
-  Convert all times to Paris Time (CET/CEST). 
-  Check actual 2024/2025 rosters. 
-  Respond in ${languageFullName}.`;
+  const prompt = `NextWin Engine. Time: ${timeContext}.
+  Find 9 REAL upcoming professional matches for next 48h (3 Football, 3 Basketball, 3 Tennis).
+  Respond ONLY with a JSON object: {"picks": [{"sport": "football", "match": "Team A vs Team B", "betType": "...", "probability": "75%", "analysis": "...", "confidence": "High", "matchDate": "...", "matchTime": "..."}]}.
+  All times in Paris Time. Language: ${langName}.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: "application/json",
+        tools: [{ googleSearch: {} }]
       }
     });
 
-    const result = safeParseJson(response.text || "{}");
+    const result = extractJsonFromText(response.text || "{}");
     return result.picks || [];
   } catch (error) {
-    console.error("Error fetching daily picks:", error);
+    console.error("Daily Picks Error:", error);
     return [];
   }
 };
@@ -95,17 +75,30 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const timeContext = getParisTimeContext();
-  const languageFullName = language === 'fr' ? 'French' : 'English';
+  const langName = language === 'fr' ? 'Français' : 'English';
 
-  const prompt = `Expert Analyst NextWin PRO. Current Paris Time: ${timeContext}.
-    Match: ${request.match} (${request.sport}). Bet Type: ${request.betType}.
-    
-    1. SEARCH: Find the EXACT next date/time of this match.
-    2. CONVERT: Systematically convert match time to PARIS TIME (CET/CEST).
-    3. DATA: Verify 2024/2025 rosters, injuries, and recent form.
-    4. RESPOND: JSON in ${languageFullName}.
-    
-    IMPORTANT: If the match is in the future (even 1 month away), provide the full analysis.`;
+  // Using a single string prompt for max reliability with search
+  const prompt = `Tu es l'expert analyste NextWin PRO. Heure Paris : ${timeContext}.
+  
+  ANALYSE CE MATCH : ${request.match} (${request.sport})
+  TYPE DE PARI : ${request.betType}
+  
+  MISSIONS :
+  1. Trouve la date et l'heure EXACTES du match via recherche web.
+  2. Vérifie les effectifs 2024/2025, blessures et forme récente.
+  3. Calcule la probabilité mathématique de succès.
+  
+  RÉPONDS EXCLUSIVEMENT AU FORMAT JSON SUIVANT (en ${langName}) :
+  {
+    "detailedAnalysis": "Analyse tactique approfondie...",
+    "successProbability": "XX%",
+    "riskAssessment": "Low" | "Medium" | "High",
+    "matchDate": "JJ/MM/AAAA",
+    "matchTime": "HH:MM",
+    "aiOpinion": "Verdict final concis"
+  }
+  
+  Important : Ne réponds RIEN d'autre que le JSON.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -113,33 +106,36 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
         contents: prompt,
         config: {
             tools: [{ googleSearch: {} }],
-            responseMimeType: "application/json",
-            responseSchema: responseSchema,
+            // Removed responseMimeType and schema to avoid conflicts with Search grounding
             thinkingConfig: { thinkingBudget: 15000 }
         }
     });
     
-    const result = safeParseJson(response.text || "{}");
+    const result = extractJsonFromText(response.text || "{}");
+    
+    // Extract sources from grounding metadata
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const sources: GroundingSource[] = groundingChunks 
         ? groundingChunks.map((chunk: any) => ({
             title: chunk.web?.title || 'Data Source',
             uri: chunk.web?.uri || '#'
-          })).filter((s: any) => s.uri !== '#')
+          })).filter((s: any) => s.uri && s.uri !== '#')
         : [];
 
     return { ...result, sources };
   } catch (error) {
-    console.error("Analysis Error:", error);
+    console.error("Detailed Analysis Error:", error);
     throw error;
   }
 };
 
 export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'dashboard' | 'tactical' = 'dashboard'): Promise<string | undefined> => {
+  if (!process.env.API_KEY) return undefined;
+  
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const visualPrompt = style === 'dashboard' 
-    ? `Professional sports analytics dashboard for "${request.match}" (${request.sport}). High-tech UI, statistics, dark mode with orange accents.`
-    : `Top-down tactical view of "${request.match}" (${request.sport}). Glowing neon arrows, player zones, heatmaps.`;
+    ? `Pro sports analytics dashboard for ${request.match} (${request.sport}). High-tech UI, statistics, dark mode, orange neon theme.`
+    : `Top-down tactical overview of ${request.match} (${request.sport}). Neon arrows, player heatmaps, glowing pitch zones.`;
 
   try {
     const response = await ai.models.generateContent({
