@@ -3,17 +3,15 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Service NextWin AI - Version PRODUCTION Vercel
- * Optimisé pour éviter les erreurs de parsing et les problèmes de quota.
+ * Service NextWin AI - Version VERCEL OPTIMIZED
  */
 
 const getAIInstance = () => {
-    // Tentative d'accès à la clé API injectée par Vite/Vercel
-    const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : undefined;
+    // Sur Vite/Vercel, process.env est injecté via le define du vite.config.ts
+    const apiKey = (window as any).process?.env?.API_KEY || process.env.API_KEY;
     
     if (!apiKey || apiKey === "undefined" || apiKey === "") {
-        console.error("ERREUR CRITIQUE : La variable d'environnement API_KEY est vide ou non définie sur Vercel.");
-        throw new Error("Configuration API manquante. Veuillez vérifier les variables d'environnement sur Vercel.");
+        throw new Error("API_KEY_MISSING");
     }
     return new GoogleGenAI({ apiKey });
 };
@@ -31,13 +29,12 @@ const getParisContext = () => {
 };
 
 const extractJsonFromText = (text: string) => {
-    if (!text) throw new Error("Le moteur IA a renvoyé une réponse vide.");
+    if (!text) throw new Error("EMPTY_RESPONSE");
     
-    // Nettoyage des balises markdown et espaces superflus
-    let cleaned = text.trim();
-    cleaned = cleaned.replace(/```json/g, "").replace(/```/g, "").trim();
+    // Nettoyage Markdown (Gemini entoure souvent de ```json ... ```)
+    let cleaned = text.trim().replace(/```json/g, "").replace(/```/g, "").trim();
     
-    // Recherche du bloc JSON valide le plus large
+    // Recherche de la première accolade ouvrante et de la dernière fermante
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
     
@@ -46,42 +43,49 @@ const extractJsonFromText = (text: string) => {
         try {
             return JSON.parse(jsonContent);
         } catch (e) {
-            console.error("Échec du parsing JSON initial. Contenu :", jsonContent);
-            // Tentative de réparation (suppression des virgules traînantes)
+            console.error("JSON Parse Error. Content:", jsonContent);
+            // Tentative de réparation ultime (suppression des sauts de ligne dans les strings)
             try {
-                const repaired = jsonContent.replace(/,\s*([\]}])/g, '$1');
+                const repaired = jsonContent.replace(/\n/g, " ");
                 return JSON.parse(repaired);
             } catch (innerE) {
-                throw new Error("Format de données invalide reçu de l'IA.");
+                throw new Error("INVALID_JSON_FORMAT");
             }
         }
     }
-    throw new Error("Impossible d'extraire des données structurées de l'analyse.");
+    throw new Error("NO_JSON_FOUND");
 };
 
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
   try {
     const ai = getAIInstance();
     const timeNow = getParisContext();
-    const lang = language === 'fr' ? 'Français' : 'English';
+    const lang = language === 'fr' ? 'français' : 'english';
 
-    const prompt = `NextWin Daily Engine. Date: ${timeNow}. Année: 2025.
-    Mission: Utilise Google Search pour trouver 9 matchs réels (3 Foot, 3 Basket, 3 Tennis) prévus dans les prochaines 48h.
-    Retourne UNIQUEMENT cet objet JSON sans aucun texte autour:
-    {"picks": [{"sport": "football|basketball|tennis", "match": "Equipe A vs Equipe B", "betType": "...", "probability": "XX%", "analysis": "...", "confidence": "High", "matchDate": "JJ/MM/2025", "matchTime": "HH:MM"}]}
-    Langue: ${lang}.`;
+    // Prompt plus direct pour limiter les hallucinations et le texte superflu
+    const prompt = `Date: ${timeNow}. Année 2025. 
+    Trouve 9 matchs réels (3 Foot, 3 Basket, 3 Tennis) prévus d'ici 48h via Google Search.
+    Retourne UNIQUEMENT cet objet JSON brut:
+    {"picks": [{"sport": "football|basketball|tennis", "match": "A vs B", "betType": "...", "probability": "XX%", "analysis": "Analysis in ${lang}", "confidence": "High", "matchDate": "JJ/MM/2025", "matchTime": "HH:MM"}]}
+    Langue des analyses: ${lang}.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview', 
       contents: prompt,
-      config: { tools: [{ googleSearch: {} }] }
+      config: { 
+        tools: [{ googleSearch: {} }],
+        temperature: 0.1 // Plus de déterminisme pour le JSON
+      }
     });
 
     if (!response.text) return [];
     const result = extractJsonFromText(response.text);
     return result.picks || [];
-  } catch (error) {
-    console.error("Erreur Daily Picks:", error);
+  } catch (error: any) {
+    if (error.message === "API_KEY_MISSING") {
+        console.error("NextWin: API_KEY is missing in Vercel environment variables.");
+    }
+    console.error("Daily Picks Error:", error);
     return [];
   }
 };
@@ -90,21 +94,19 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   try {
     const ai = getAIInstance();
     const timeNow = getParisContext();
-    const lang = language === 'fr' ? 'Français' : 'English';
+    const lang = language === 'fr' ? 'français' : 'english';
 
-    const prompt = `ANALYSEUR NEXTWIN PRO 2025.
-    CIBLE: ${request.match} (${request.sport}). TYPE: ${request.betType}.
-    DATE ACTUELLE: ${timeNow}.
-    INSTRUCTIONS:
-    1. Recherche via Google Search les compos, blessures et news de 2025.
-    2. Réponds UNIQUEMENT via ce JSON:
+    const prompt = `ANALYSEUR NEXTWIN 2025.
+    Match: ${request.match} (${request.sport}). Pari: ${request.betType}. Date: ${timeNow}.
+    Recherche via Google Search (blessés, forme 2025).
+    Réponds UNIQUEMENT en JSON:
     {
-      "detailedAnalysis": "Analyse technique pro...",
+      "detailedAnalysis": "Analyse technique...",
       "successProbability": "XX%",
       "riskAssessment": "Low"|"Medium"|"High",
       "matchDate": "DD/MM/2025",
       "matchTime": "HH:MM",
-      "aiOpinion": "Conseil final stratégique"
+      "aiOpinion": "Conseil final"
     }
     Langue: ${lang}.`;
 
@@ -114,30 +116,22 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
         config: { tools: [{ googleSearch: {} }] }
     });
     
-    if (!response.text) throw new Error("Réponse vide du moteur de recherche.");
-    
-    const result = extractJsonFromText(response.text);
-    
-    // Récupération des sources web pour la transparence
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    const sources: GroundingSource[] = groundingChunks
+    const result = extractJsonFromText(response.text || "{}");
+    const sources: GroundingSource[] = (response.candidates?.[0]?.groundingMetadata?.groundingChunks || [])
         .filter((c: any) => c.web?.uri)
-        .map((c: any) => ({ title: c.web.title || 'Source Match', uri: c.web.uri }));
+        .map((c: any) => ({ title: c.web.title || 'Source Info', uri: c.web.uri }));
 
     return { ...result, sources };
   } catch (error: any) {
-    console.error("Erreur détaillée Analyse:", error);
-    if (error.message?.includes("429") || error.message?.includes("quota")) {
-        throw new Error("Quota API dépassé (429). Veuillez patienter 1 minute et réessayer.");
-    }
-    throw new Error(error.message || "Une erreur inattendue est survenue lors de l'analyse.");
+    console.error("Analysis Engine Error:", error);
+    throw new Error(error.message === "API_KEY_MISSING" ? "Clé API non configurée sur Vercel." : "Le moteur d'analyse est momentanément indisponible.");
   }
 };
 
 export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'dashboard' | 'tactical' = 'dashboard'): Promise<string | undefined> => {
   try {
     const ai = getAIInstance();
-    const visualPrompt = `Professional sports analytical ${style} visual for ${request.match} in 2025, neon orange and black theme, futuristic UI, 4K.`;
+    const visualPrompt = `Professional sports analytical ${style} visual for ${request.match}, high-tech neon orange interface, 4K.`;
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: { parts: [{ text: visualPrompt }] },
@@ -146,8 +140,6 @@ export const generateAnalysisVisual = async (request: AnalysisRequest, style: 'd
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
     }
-  } catch (e) {
-    console.warn("Échec génération visuel:", e);
-  }
+  } catch (e) {}
   return undefined;
 };

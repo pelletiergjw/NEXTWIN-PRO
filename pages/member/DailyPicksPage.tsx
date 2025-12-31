@@ -14,13 +14,19 @@ const DailyPicksPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'football' | 'basketball' | 'tennis'>('football');
 
+  const fetchPicks = async () => {
+    setIsLoading(true);
+    try {
+        const data = await getDailyPicks(language);
+        setPicks(data);
+    } catch (e) {
+        console.error("Page error:", e);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchPicks = async () => {
-      setIsLoading(true);
-      const data = await getDailyPicks(language);
-      setPicks(data);
-      setIsLoading(false);
-    };
     fetchPicks();
   }, [language]);
 
@@ -37,7 +43,6 @@ const DailyPicksPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Sport Tabs */}
       <div className="flex flex-wrap justify-center gap-3 mb-12">
         <TabButton 
           active={activeTab === 'football'} 
@@ -62,18 +67,28 @@ const DailyPicksPage: React.FC = () => {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-8">
           <Spinner />
-          <p className="text-orange-400 font-bold text-lg animate-pulse tracking-wide">{t('daily_picks_loading')}</p>
+          <div className="text-center space-y-2">
+            <p className="text-orange-400 font-bold text-lg animate-pulse tracking-wide">{t('daily_picks_loading')}</p>
+            <p className="text-gray-600 text-[10px] uppercase font-black tracking-widest">Recherche des cotes 2025...</p>
+          </div>
         </div>
       ) : filteredPicks.length > 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fadeIn">
           {filteredPicks.map((pick, idx) => (
             <PickCard key={idx} pick={pick} />
           ))}
         </div>
       ) : (
-        <Card className="text-center py-24 text-gray-500 rounded-[2rem] border-gray-800/40">
-          <p className="text-lg font-medium">{t('daily_picks_empty')}</p>
-        </Card>
+        <div className="max-w-md mx-auto">
+            <Card className="text-center py-16 px-8 text-gray-500 rounded-[2.5rem] border-gray-800/40 bg-[#1C1C2B]">
+                <div className="text-6xl mb-6 opacity-20 grayscale">📡</div>
+                <h3 className="text-white font-bold text-xl mb-4">{t('daily_picks_empty')}</h3>
+                <p className="text-sm mb-8">Le moteur de recherche n'a pas renvoyé de résultats probants pour le moment. Réessayez dans quelques secondes.</p>
+                <Button onClick={fetchPicks} className="w-full py-4 text-xs font-black uppercase tracking-widest">
+                    Actualiser les Pronostics
+                </Button>
+            </Card>
+        </div>
       )}
     </div>
   );
@@ -99,10 +114,9 @@ const PickCard: React.FC<{ pick: DailyPick }> = ({ pick }) => {
 
   return (
     <Card className="flex flex-col h-full border-gray-800/40 hover:border-orange-500/30 transition-all group overflow-hidden rounded-[2rem] p-8">
-      {/* Date & Time Header */}
       <div className="bg-gray-900/80 -mx-8 -mt-8 px-6 py-3 mb-8 border-b border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-            <span className="text-sm">🕒</span>
+            <span className="text-sm">📅</span>
             <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{pick.matchDate}</span>
         </div>
         <span className="text-[11px] font-black text-orange-400 tracking-widest">{pick.matchTime}</span>
