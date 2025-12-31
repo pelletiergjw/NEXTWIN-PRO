@@ -109,7 +109,7 @@ export const translations = {
     footer_contact_title: "Support",
     footer_legal_notice: "Mentions Légales",
     footer_legal_tos: "CGV",
-    footer_legal_privacy: "Confidentialité",
+    footer_legal_privacy: "Politique de Confidentialité",
     footer_contact_link: "Contact",
 
     // Dashboard
@@ -421,7 +421,7 @@ export const translations = {
     sports_intro_text: "Voici les marchés sur lesquels notre IA excelle en",
   },
   en: {
-    // ... (rest of dictionary)
+    // ... (existing translations)
     bankroll_suggested_stake: "Suggested Stake (5% Risk)",
     bankroll_add_funds: "Add Funds",
     bankroll_deposit_amount: "Deposit Amount (€)",
