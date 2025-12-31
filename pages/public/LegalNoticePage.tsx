@@ -95,7 +95,7 @@ const LegalNoticePage: React.FC = () => {
                 </section>
 
                 <div className="pt-10 text-center opacity-30 text-[10px] font-black uppercase tracking-widest text-gray-600 border-t border-gray-800">
-                    NextWin Global Compliance • 2025 • NEXTWIN Digital Technologies LLC
+                    NextWin Global Compliance • 2026 • NEXTWIN Digital Technologies LLC
                 </div>
             </Card>
         </div>

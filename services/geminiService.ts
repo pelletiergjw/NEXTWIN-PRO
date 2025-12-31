@@ -139,12 +139,12 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     CONTEXTE TEMPOREL (PARIS, FRANCE): ${timeContext}
 
     PROTOCOLE "NEXTWIN PRECISION & PREDICTION" :
-    1. VÉRIFICATION TEMPORELLE (CRITIQUE) :
+    1. VÉRIFICATION TEMPORELLE (IMPÉRATIF) :
        - Recherche la date et l'heure locale exacte de la PROCHAINE rencontre entre ces deux entités : ${request.match}.
        - CONVERTIS CET HORAIRE EN HEURE DE PARIS (CET/CEST).
-       - Si le match est prévu dans le futur (même dans plusieurs jours/semaines), tu DOIS impérativement fournir une ANALYSE PRÉVISIONNELLE complète.
-       - Ne refuse JAMAIS une analyse sous prétexte que le match n'a pas lieu aujourd'hui. Les clients utilisent NextWin pour se projeter.
-       - Si le match est fini par rapport à "${timeContext}", mentionne-le et donne le score si disponible, mais fournis tout de même une analyse rétrospective de la performance.
+       - SI LE MATCH N'A PAS LIEU AUJOURD'HUI (${timeContext}), TU DOIS ANALYSER LA PROCHAINE DATE DISPONIBLE.
+       - NE RÉPONDS JAMAIS "qu'il n'y a pas de match aujourd'hui". Les clients paient pour des prévisions sur les futures rencontres.
+       - Si le match est fini, analyse le prochain. Si c'est un match futur (même dans 1 mois), fournis l'analyse complète basée sur les données actuelles.
 
     2. VÉRIFICATION EFFECTIFS (Saison 2024/2025) : 
        - Utilise Search pour confirmer le club actuel de chaque joueur et la forme récente des équipes.

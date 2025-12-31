@@ -141,7 +141,7 @@ const PrivacyPolicyPage: React.FC = () => {
         </div>
 
         <div className="pt-10 text-center opacity-30 text-[10px] font-black uppercase tracking-widest text-gray-600 border-t border-gray-800">
-          NextWin Privacy Assurance • 2025 • NEXTWIN Digital Technologies LLC
+          NextWin Privacy Assurance • 2026 • NEXTWIN Digital Technologies LLC
         </div>
       </Card>
     </div>
