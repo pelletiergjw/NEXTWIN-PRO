@@ -12,15 +12,22 @@ const DailyPicksPage: React.FC = () => {
   const { t, language } = useLanguage();
   const [picks, setPicks] = useState<DailyPick[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'football' | 'basketball' | 'tennis'>('football');
 
   const fetchPicks = async () => {
     setIsLoading(true);
+    setError(null);
     try {
         const data = await getDailyPicks(language);
-        setPicks(data);
+        if (data && data.length > 0) {
+            setPicks(data);
+        } else {
+            setError("L'IA n'a pas pu générer de pronostics. Vérifiez votre clé API sur Vercel.");
+        }
     } catch (e) {
         console.error("Page error:", e);
+        setError("Erreur de connexion au service d'analyse.");
     } finally {
         setIsLoading(false);
     }
@@ -33,7 +40,7 @@ const DailyPicksPage: React.FC = () => {
   const filteredPicks = picks.filter(p => p.sport === activeTab);
 
   return (
-    <div className="max-w-6xl mx-auto py-6">
+    <div className="max-w-6xl mx-auto py-6 px-4">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
           {t('daily_picks_title')}
@@ -69,7 +76,7 @@ const DailyPicksPage: React.FC = () => {
           <Spinner />
           <div className="text-center space-y-2">
             <p className="text-orange-400 font-bold text-lg animate-pulse tracking-wide">{t('daily_picks_loading')}</p>
-            <p className="text-gray-600 text-[10px] uppercase font-black tracking-widest">Recherche des cotes 2025...</p>
+            <p className="text-gray-600 text-[10px] uppercase font-black tracking-widest">Recherche des cotes mondiales...</p>
           </div>
         </div>
       ) : filteredPicks.length > 0 ? (
@@ -82,10 +89,12 @@ const DailyPicksPage: React.FC = () => {
         <div className="max-w-md mx-auto">
             <Card className="text-center py-16 px-8 text-gray-500 rounded-[2.5rem] border-gray-800/40 bg-[#1C1C2B]">
                 <div className="text-6xl mb-6 opacity-20 grayscale">📡</div>
-                <h3 className="text-white font-bold text-xl mb-4">{t('daily_picks_empty')}</h3>
-                <p className="text-sm mb-8">Le moteur de recherche n'a pas renvoyé de résultats probants pour le moment. Réessayez dans quelques secondes.</p>
+                <h3 className="text-white font-bold text-xl mb-4">Moteur Indisponible</h3>
+                <p className="text-sm mb-8 text-gray-400">
+                    {error || "L'IA n'a pas renvoyé de résultats. Cela peut arriver si les services Google sont saturés."}
+                </p>
                 <Button onClick={fetchPicks} className="w-full py-4 text-xs font-black uppercase tracking-widest">
-                    Actualiser les Pronostics
+                    Forcer la Recherche
                 </Button>
             </Card>
         </div>
