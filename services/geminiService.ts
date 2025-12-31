@@ -3,154 +3,116 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Extrait le JSON de manière ultra-robuste, même si l'IA ajoute du texte autour ou des balises markdown.
+ * Extrait un objet JSON d'une chaîne de caractères robuste aux préambules de l'IA.
  */
 const extractJson = (text: string) => {
     try {
-        // Supprime les balises markdown json si présentes
-        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const firstBracket = cleanText.indexOf('{');
-        const lastBracket = cleanText.lastIndexOf('}');
+        const firstBracket = text.indexOf('{');
+        const lastBracket = text.lastIndexOf('}');
         
         if (firstBracket !== -1 && lastBracket !== -1) {
-            const jsonString = cleanText.substring(firstBracket, lastBracket + 1);
+            const jsonString = text.substring(firstBracket, lastBracket + 1);
             return JSON.parse(jsonString);
         }
     } catch (e) {
-        console.error("Erreur critique de parsing JSON IA:", e, "Texte reçu:", text);
+        console.error("Erreur de parsing JSON IA:", e, "Texte brut:", text);
     }
     return null;
 };
 
 const getAIInstance = () => {
-    // Vite remplace process.env.API_KEY lors du build GitHub Actions.
-    // On récupère la valeur brute injectée.
+    // Vite remplace process.env.API_KEY par la valeur réelle pendant le build GitHub Actions
     const apiKey = process.env.API_KEY;
     
-    // Si la clé est absente ou n'a pas été remplacée (cas local sans env)
-    if (!apiKey || apiKey === "" || apiKey === "process.env.API_KEY" || apiKey === "undefined") {
-        console.error("ERREUR : Clé API non détectée. Vérifiez vos Secrets GitHub (API_KEY).");
+    if (!apiKey || apiKey === "" || apiKey === "process.env.API_KEY") {
+        console.error("CRITICAL: API_KEY non configurée dans les Secrets GitHub.");
         return null;
     }
     return new GoogleGenAI({ apiKey });
 };
 
-/**
- * Récupère les 9 pronostics du jour (3 par sport) basés sur des matchs RÉELS.
- */
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
     const ai = getAIInstance();
     if (!ai) throw new Error("API_KEY_MISSING");
 
-    // Calcul de la date actuelle à Paris pour le prompt
-    const nowInParis = new Intl.DateTimeFormat('fr-FR', {
-        timeZone: 'Europe/Paris',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    }).format(new Date());
-
     try {
-        const prompt = `Utilise Google Search pour trouver 9 matchs de sport RÉELS prévus pour aujourd'hui ou demain (date de référence actuelle à Paris : ${nowInParis}).
-        Répartition impérative : 3 Football, 3 Basketball, 3 Tennis.
-        
-        Pour chaque match, tu dois fournir :
-        - Le nom exact du match (Equipe A vs Equipe B)
-        - Le type de pari (ex: Victoire Equipe A, Plus de 2.5 buts, etc.)
-        - La probabilité de réussite (ex: 78%)
-        - Une analyse courte (2 phrases)
-        - La confiance (High ou Very High)
-        - La date et l'heure EXACTE DE PARIS.
-
+        const prompt = `Trouve 9 matchs de sport RÉELS prévus aujourd'hui ou demain : 3 de Football, 3 de Basketball et 3 de Tennis.
+        Pour chaque match, fournis : l'équipe/joueur 1, l'équipe/joueur 2, le type de pari suggéré, la probabilité de succès (en %), une analyse rapide et la confiance (High ou Very High).
         Réponds UNIQUEMENT avec cet objet JSON :
         {
           "picks": [
             {
               "sport": "football",
-              "match": "Nom du Match",
-              "betType": "Type de Pari",
-              "probability": "00%",
-              "analysis": "Analyse...",
+              "match": "Équipe A vs Équipe B",
+              "betType": "Victoire Équipe A",
+              "probability": "75%",
+              "analysis": "Analyse rapide...",
               "confidence": "High",
-              "matchDate": "JJ/MM",
-              "matchTime": "HH:MM"
+              "matchDate": "20/05",
+              "matchTime": "21:00"
             }
           ]
         }`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Tu es l'analyste expert de NextWin. Ton sérieux dépend de la véracité des matchs. Utilise Google Search pour vérifier les horaires réels à Paris. Réponds exclusivement en JSON pur."
+                systemInstruction: "Tu es l'expert NextWin. Tu identifies des matchs RÉELS via Google Search et tu réponds exclusivement en JSON."
             }
         });
 
         const result = extractJson(response.text || "");
-        if (result && result.picks && Array.isArray(result.picks)) {
-            return result.picks;
-        }
-        
-        return [];
+        return (result && result.picks) ? result.picks : [];
     } catch (error) {
-        console.error("Erreur DailyPicks:", error);
+        console.error("Erreur picks:", error);
         throw error;
     }
 };
 
-/**
- * Analyse approfondie d'un match spécifique via recherche web.
- */
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
     const ai = getAIInstance();
     if (!ai) throw new Error("API_KEY_MISSING");
 
-    const nowInParis = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris' }).format(new Date());
-
     try {
-        const prompt = `Analyse expert via Google Search pour le match : ${request.match} (${request.betType}).
-        Vérifie les compositions, blessures et dynamiques réelles pour la date du ${nowInParis}.
-        
-        Toutes les heures citées doivent être à l'heure de PARIS.
-        
+        const prompt = `Analyse expert pour le match : ${request.match} (${request.betType}). 
+        Cherche les dernières infos réelles (compos, blessures) via Google Search.
         Réponds UNIQUEMENT en JSON :
         {
-          "detailedAnalysis": "Analyse technique exhaustive...",
-          "successProbability": "00%",
-          "riskAssessment": "Low/Medium/High",
-          "aiOpinion": "Conseil stratégique final...",
-          "matchDate": "Date réelle",
-          "matchTime": "Heure de Paris"
+          "detailedAnalysis": "Analyse complète...",
+          "successProbability": "70%",
+          "riskAssessment": "Medium",
+          "aiOpinion": "Résumé...",
+          "matchDate": "Date",
+          "matchTime": "Heure"
         }`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Tu es un analyste pro. Utilise Google Search pour obtenir des données factuelles et récentes. Heure de Paris obligatoire. Format JSON pur."
+                systemInstruction: "Tu es un analyste pro. Utilise Search pour les données réelles. Réponds en JSON pur."
             }
         });
 
         const result = extractJson(response.text || "{}");
         const sources: GroundingSource[] = (response.candidates?.[0]?.groundingMetadata?.groundingChunks || [])
             .filter((c: any) => c.web?.uri)
-            .map((c: any) => ({ title: c.web.title || 'Source Web', uri: c.web.uri }));
+            .map((c: any) => ({ title: c.web.title || 'Source', uri: c.web.uri }));
 
         return {
-            detailedAnalysis: result?.detailedAnalysis || "L'IA n'a pas pu générer une analyse détaillée.",
-            successProbability: result?.successProbability || "50%",
+            detailedAnalysis: result?.detailedAnalysis || "Analyse indisponible.",
+            successProbability: result?.successProbability || "0%",
             riskAssessment: result?.riskAssessment || "High",
-            aiOpinion: result?.aiOpinion || "Données insuffisantes pour un avis tranché.",
+            aiOpinion: result?.aiOpinion || "Avis indisponible.",
             matchDate: result?.matchDate || "N/A",
             matchTime: result?.matchTime || "N/A",
             sources
         };
     } catch (error) {
-        console.error("Erreur BetAnalysis:", error);
+        console.error("Erreur analyse:", error);
         throw error;
     }
 };
