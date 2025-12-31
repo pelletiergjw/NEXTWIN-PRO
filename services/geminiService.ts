@@ -3,31 +3,17 @@ import { GoogleGenAI } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, GroundingSource, DailyPick } from '../types';
 
 /**
- * Récupération sécurisée de la clé API.
- * Priorise l'injection Vite (GitHub Actions).
- */
-const getApiKey = (): string => {
-    // @ts-ignore
-    const viteKey = import.meta.env?.VITE_API_KEY;
-    const processKey = typeof process !== 'undefined' ? process.env?.API_KEY : '';
-    
-    const finalKey = (viteKey || processKey || "").trim();
-    
-    // Nettoyage des chaînes de placeholders potentielles
-    if (finalKey === "" || finalKey === "undefined" || finalKey.includes("import.meta")) {
-        return "";
-    }
-    return finalKey;
-};
-
-/**
- * Initialise l'instance IA avec validation.
+ * Initialise l'instance IA.
+ * process.env.API_KEY est remplacé dynamiquement par Vite lors du build sur GitHub.
  */
 const getAIInstance = () => {
-    const apiKey = getApiKey();
-    if (!apiKey || apiKey.length < 10) {
-        throw new Error("API_KEY_NOT_FOUND_IN_BUILD");
+    const apiKey = (process.env.API_KEY || "").trim();
+    
+    // Vérification de sécurité pour le développeur
+    if (!apiKey || apiKey === "" || apiKey === "undefined" || apiKey.length < 10) {
+        throw new Error("API_KEY_NOT_CONFIGURED");
     }
+    
     return new GoogleGenAI({ apiKey });
 };
 
@@ -59,14 +45,14 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
             { "picks": [ { "sport": "football", "match": "Equipe A vs Equipe B", "betType": "Victoire A", "probability": "75%", "analysis": "...", "confidence": "High", "matchDate": "DD/MM", "matchTime": "HH:MM" } ] }`,
             config: {
                 tools: [{ googleSearch: {} }],
-                systemInstruction: "Expert NextWin. Utilise la recherche pour des matchs réels."
+                systemInstruction: "Expert NextWin. Utilise la recherche pour des matchs réels. Réponds exclusivement en JSON propre."
             }
         });
 
         const result = extractJson(response.text || "");
         return result?.picks || [];
     } catch (error: any) {
-        console.error("Erreur Moteur DailyPicks:", error);
+        console.error("Gemini Engine Error:", error);
         throw error;
     }
 };
@@ -99,7 +85,6 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
             sources
         };
     } catch (error: any) {
-        console.error("Erreur Moteur Analyse:", error);
         throw error;
     }
 };
