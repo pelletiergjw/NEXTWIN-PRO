@@ -101,7 +101,7 @@ export const translations = {
     pricing_subscribed_message: "Vous êtes Membre Pro",
 
     // Footer
-    footer_subtitle: "Expertise en intelligence artificielle appliquée aux marchés sportifs.",
+    footer_subtitle: "Optimisez vos décisions en paris sportifs grâce à l’IA.",
     footer_warning: "Attention : Le jeu comporte des risques. Restez maître de vos mises. ",
     footer_warning_link_text: "Aide & Conseil",
     footer_nav_title: "Navigation",
@@ -520,7 +520,7 @@ export const translations = {
     pricing_subscribed_message: "You are a Pro Member",
 
     // Footer
-    footer_subtitle: "Artificial intelligence expertise applied to sports markets.",
+    footer_subtitle: "Optimize your sports betting decisions with AI.",
     footer_warning: "Warning: Gambling involves risks. Stay in control of your bets.",
     footer_warning_link_text: "Help & Advice",
     footer_nav_title: "Navigation",
