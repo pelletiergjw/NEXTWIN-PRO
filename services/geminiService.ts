@@ -134,19 +134,20 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
   const timeContext = getParisTimeContext();
 
   const prompt = `
-    RÔLE: Expert Analyste NextWin PRO - Spécialiste Data, Transferts et Synchronisation Horaire.
+    RÔLE: Expert Analyste NextWin PRO - Spécialiste Data, Transferts et Prévisions Stratégiques.
     
     CONTEXTE TEMPOREL (PARIS, FRANCE): ${timeContext}
 
-    PROTOCOLE "NEXTWIN PRECISION" :
+    PROTOCOLE "NEXTWIN PRECISION & PREDICTION" :
     1. VÉRIFICATION TEMPORELLE (CRITIQUE) :
-       - Recherche l'heure locale exacte de ${request.match}.
+       - Recherche la date et l'heure locale exacte de la PROCHAINE rencontre entre ces deux entités : ${request.match}.
        - CONVERTIS CET HORAIRE EN HEURE DE PARIS (CET/CEST).
-       - Si le match est fini par rapport à "${timeContext}", mentionne-le et donne le score si disponible.
-       - Pour la NBA : l'heure doit être celle du milieu de la nuit ou matinée en France.
+       - Si le match est prévu dans le futur (même dans plusieurs jours/semaines), tu DOIS impérativement fournir une ANALYSE PRÉVISIONNELLE complète.
+       - Ne refuse JAMAIS une analyse sous prétexte que le match n'a pas lieu aujourd'hui. Les clients utilisent NextWin pour se projeter.
+       - Si le match est fini par rapport à "${timeContext}", mentionne-le et donne le score si disponible, mais fournis tout de même une analyse rétrospective de la performance.
 
     2. VÉRIFICATION EFFECTIFS (Saison 2024/2025) : 
-       - Utilise Search pour confirmer le club actuel de chaque joueur (ex: Mafouta est à Guingamp, PAS à Amiens).
+       - Utilise Search pour confirmer le club actuel de chaque joueur et la forme récente des équipes.
        - Toute hallucination sur un effectif est une faute grave.
 
     3. ANALYSE :
@@ -156,17 +157,18 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
 
     RÉPONDRE EN JSON (${languageFullName}).
     Le champ 'matchTime' doit être l'heure de Paris (format HH:mm).
+    Le champ 'matchDate' doit être la date réelle trouvée via Search.
   `;
 
   try {
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview', // Modèle Pro pour la rigueur du calcul horaire
+        model: 'gemini-3-pro-preview', 
         contents: prompt,
         config: {
             tools: [{ googleSearch: {} }],
             responseMimeType: "application/json",
             responseSchema: responseSchema,
-            thinkingConfig: { thinkingBudget: 12000 } // Budget maximum pour réconciliation de fuseaux horaires
+            thinkingConfig: { thinkingBudget: 12000 }
         }
     });
     
