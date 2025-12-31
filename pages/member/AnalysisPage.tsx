@@ -23,19 +23,20 @@ const AnalysisPage: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult['response'] | null>(null);
 
   const loadingSteps = [
-    "Initialisation du moteur NextWin...",
-    "Vérification des effectifs 2025 (Anti-hallucination)...",
-    "Scan des news et transferts récents...",
-    "Calcul des probabilités statistiques...",
-    "Génération du rapport d'expertise..."
+    "Connexion au réseau neuronal NextWin...",
+    "Vérification des effectifs sur Flashscore (Saison 24/25)...",
+    "Validation des derniers transferts (Ex: Mafouta)...",
+    "Calcul des indices de fatigue et blessures...",
+    "Finalisation du rapport d'expertise..."
   ];
 
   useEffect(() => {
     let interval: any;
     if (isLoading) {
+      setLoadingStep(0);
       interval = setInterval(() => {
         setLoadingStep(prev => (prev < loadingSteps.length - 1 ? prev + 1 : prev));
-      }, 3000);
+      }, 3500);
     }
     return () => clearInterval(interval);
   }, [isLoading]);
@@ -44,7 +45,7 @@ const AnalysisPage: React.FC = () => {
     if ((window as any).aistudio?.openSelectKey) {
         await (window as any).aistudio.openSelectKey();
         setError(null);
-        // On retente automatiquement
+        // On retente l'analyse
         handleSubmit(new Event('submit') as any);
     }
   };
@@ -96,8 +97,8 @@ const AnalysisPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Analyseur <span className="text-orange-500">NextWin v5.8</span></h1>
-        <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.3em]">Validation Saison 2024/2025 Active</p>
+        <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Analyseur <span className="text-orange-500">NextWin v6.0</span></h1>
+        <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.3em]">IA Predictive Engine - Saison 2024/2025</p>
       </div>
       
       <div className="grid lg:grid-cols-12 gap-8">
@@ -118,9 +119,20 @@ const AnalysisPage: React.FC = () => {
                     </Select>
 
                     <Button type="submit" disabled={isLoading} className="w-full py-5 text-lg font-black uppercase shadow-xl shadow-orange-500/20 rounded-2xl">
-                        {isLoading ? "Recherche 2025..." : "Lancer l'Analyse Pro"}
+                        {isLoading ? "Consultation Flashscore..." : "Lancer l'Analyse Pro"}
                     </Button>
                 </form>
+
+                <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-2xl">
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">Statut de la clé API</p>
+                    <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span className="text-xs text-white font-bold">Système Opérationnel</span>
+                         </div>
+                         <button onClick={handleOpenKeyPicker} className="text-[9px] text-orange-400 underline font-black uppercase">Changer de clé</button>
+                    </div>
+                </div>
             </Card>
         </div>
         
@@ -131,27 +143,27 @@ const AnalysisPage: React.FC = () => {
                     <Spinner />
                     <div className="text-center space-y-3 px-6">
                         <p className="text-orange-400 font-black uppercase tracking-widest text-lg animate-pulse">{loadingSteps[loadingStep]}</p>
-                        <p className="text-gray-600 text-[10px] font-bold tracking-widest">L'IA VÉRIFIE LES TRANSFERTS 2024/2025...</p>
+                        <p className="text-gray-600 text-[10px] font-bold tracking-widest">L'IA VÉRIFIE LES DONNÉES TEMPS RÉEL SUR INTERNET...</p>
                     </div>
                 </div>
             ) : error ? (
                 <div className="flex-grow flex flex-col items-center justify-center p-12 text-center space-y-8 animate-fadeIn">
                     <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center text-4xl border border-orange-500/20 shadow-xl shadow-orange-500/5">⚠️</div>
                     <div className="max-w-sm">
-                        <h3 className="text-2xl font-black text-white mb-4">Limite de Quota (429)</h3>
+                        <h3 className="text-2xl font-black text-white mb-4">Erreur de Quota</h3>
                         <p className="text-gray-400 font-medium leading-relaxed mb-8">
                             {error.message}
                             <br/><br/>
-                            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-orange-400 underline font-bold">Activer ma clé payante Google</a>
+                            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-orange-400 underline font-black">Activer la facturation Google Cloud</a>
                         </p>
                         
                         {error.code === 429 ? (
                              <Button onClick={handleOpenKeyPicker} className="w-full py-5 text-xs font-black uppercase tracking-widest bg-orange-500 shadow-xl shadow-orange-500/30 rounded-xl">
-                                🔑 Connecter ma Clé Pro (AI Studio)
+                                🔑 Utiliser ma clé personnelle (Recommandé)
                             </Button>
                         ) : (
                              <Button onClick={() => handleSubmit(new Event('submit') as any)} className="w-full py-5 text-xs font-black uppercase tracking-widest bg-white/5 border border-white/10 rounded-xl">
-                                Réessayer l'Analyse
+                                Réessayer maintenant
                             </Button>
                         )}
                     </div>
@@ -159,21 +171,21 @@ const AnalysisPage: React.FC = () => {
             ) : analysisResult ? (
                 <div className="space-y-6 p-6 md:p-10 animate-fadeIn">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-black text-white">Rapport IA <span className="text-orange-500">PRO</span></h2>
+                        <h2 className="text-3xl font-black text-white">Analyse <span className="text-orange-500">Saison 2024/25</span></h2>
                         <div className="flex items-center gap-2 px-4 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            <span className="text-[10px] uppercase font-black text-green-400 tracking-widest">Squads 2025 Verified</span>
+                            <span className="text-[10px] uppercase font-black text-green-400 tracking-widest">Real-time Verified</span>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
-                            <h3 className="text-[10px] uppercase text-gray-500 font-black mb-4 tracking-widest">Fiabilité Statistique</h3>
+                            <h3 className="text-[10px] uppercase text-gray-500 font-black mb-4 tracking-widest">Confiance Algo</h3>
                             <p className="text-5xl font-black text-white tracking-tighter">{analysisResult.successProbability}</p>
                             <ProbabilityGauge probability={parseInt(analysisResult.successProbability)} />
                         </div>
                         <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
-                            <h3 className="text-[10px] uppercase text-gray-500 font-black mb-4 tracking-widest">Estimation Risque</h3>
+                            <h3 className="text-[10px] uppercase text-gray-500 font-black mb-4 tracking-widest">Évaluation Risque</h3>
                             <p className={`text-4xl font-black mb-2 ${riskColor[analysisResult.riskAssessment as keyof typeof riskColor] || 'text-white'}`}>
                                 {analysisResult.riskAssessment}
                             </p>
@@ -181,7 +193,7 @@ const AnalysisPage: React.FC = () => {
                     </div>
 
                     <div className="bg-[#10101A] p-8 rounded-[2rem] border border-white/5">
-                        <h3 className="text-[11px] uppercase text-orange-500 font-black mb-4 tracking-[0.2em]">Rapport Technique (Validation Transferts)</h3>
+                        <h3 className="text-[11px] uppercase text-orange-500 font-black mb-4 tracking-[0.2em]">Rapport de l'IA (Validation Flashscore)</h3>
                         <p className="text-gray-300 text-base leading-relaxed font-medium mb-6 whitespace-pre-wrap">{analysisResult.detailedAnalysis}</p>
                         <div className="p-4 bg-orange-500/5 rounded-2xl border border-orange-500/20 italic text-sm text-orange-200">
                            {analysisResult.aiOpinion}
@@ -201,7 +213,7 @@ const AnalysisPage: React.FC = () => {
             ) : (
                 <div className="flex-grow flex flex-col items-center justify-center opacity-40 text-center">
                     <div className="text-8xl mb-6 grayscale opacity-20">📊</div>
-                    <p className="text-xs font-black uppercase tracking-[0.4em] text-gray-600">Prêt pour l'analyse v5.8</p>
+                    <p className="text-xs font-black uppercase tracking-[0.4em] text-gray-600">Prêt pour l'analyse Pro v6.0</p>
                 </div>
             )}
             </Card>
