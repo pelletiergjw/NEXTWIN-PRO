@@ -3,15 +3,14 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, DailyPick } from '../types';
 
 /**
- * NEXTWIN REAL-TIME ENGINE v10.0
- * Moteur de vérité : recherche web obligatoire, suppression des données fictives.
+ * NEXTWIN QUANTUM SEARCH ENGINE v11.0
+ * AUCUNE DONNÉE FICTIVE TOLÉRÉE. RECHERCHE GOOGLE OBLIGATOIRE.
  */
 
 const API_KEY = process.env.API_KEY || "";
 
-const getParisTimeContext = () => {
-    const now = new Date();
-    return now.toLocaleString('fr-FR', { 
+const getParisContext = () => {
+    return new Date().toLocaleString('fr-FR', { 
         timeZone: 'Europe/Paris',
         day: '2-digit',
         month: '2-digit',
@@ -21,25 +20,25 @@ const getParisTimeContext = () => {
     });
 };
 
-export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
+export const getDailyPicks = async (language: 'fr' | 'en'): Promise<any[]> => {
     if (!API_KEY || API_KEY.length < 10) return [];
 
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const currentContext = getParisTimeContext();
+    const today = getParisContext();
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Aujourd'hui nous sommes le ${currentContext} à Paris.
+            contents: `AUJOURD'HUI : ${today} à Paris.
             
-            INSTRUCTIONS DE VÉRITÉ ABSOLUE :
-            1. Utilise Google Search pour consulter les calendriers réels sur Flashscore, L'Équipe ou ESPN.
-            2. Trouve 9 matchs RÉELS qui se jouent AUJOURD'HUI ou DEMAIN (3 Foot, 3 Basket, 3 Tennis).
-            3. INTERDICTION FORMELLE d'inventer des matchs (ex: pas de Bayern vs Dortmund s'ils ne jouent pas aujourd'hui).
-            4. Vérifie les dernières news : blessures (ex: Mbappe, Curry, Alcaraz), suspensions et enjeux.
-            5. Si un sport n'a pas de match majeur, cherche dans une ligue secondaire RÉELLE.
+            MISSION CRITIQUE : 
+            1. Utilise GOOGLE SEARCH pour trouver 9 matchs RÉELS se déroulant entre MAINTENANT et DEMAIN SOIR.
+            2. Tu DOIS chercher spécifiquement sur : "Flashscore matches aujourd'hui", "L'équipe calendrier foot", "NBA schedule today", "ATP live scores".
+            3. INTERDIT de citer : Bayern vs Dortmund, Real vs Barca ou tout match classique s'ils ne jouent pas VRAIMENT.
+            4. Pour chaque match, vérifie les absences réelles (ex: blessure de Mbappé, absence de Curry).
+            5. Si tu n'as pas de certitude via la recherche, ne propose pas le match.
             
-            Réponds en JSON uniquement.`,
+            SORTIE : JSON avec les champs 'match', 'sport', 'betType', 'probability', 'analysis', 'matchDate', 'matchTime'.`,
             config: {
                 tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
@@ -52,12 +51,12 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
                                 type: Type.OBJECT,
                                 properties: {
                                     sport: { type: Type.STRING, enum: ['football', 'basketball', 'tennis'] },
-                                    match: { type: Type.STRING, description: "Vrais noms des équipes/joueurs" },
+                                    match: { type: Type.STRING },
                                     betType: { type: Type.STRING },
                                     probability: { type: Type.STRING },
                                     analysis: { type: Type.STRING },
                                     matchDate: { type: Type.STRING },
-                                    matchTime: { type: Type.STRING, description: "Heure française" }
+                                    matchTime: { type: Type.STRING }
                                 },
                                 required: ['sport', 'match', 'betType', 'probability', 'analysis', 'matchDate', 'matchTime']
                             }
@@ -68,47 +67,36 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
         });
 
         const result = JSON.parse(response.text || "{}");
-        // On récupère aussi les sources web pour preuve
-        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+        const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
         
+        // On attache les sources réelles à chaque pronostic pour prouver la véracité
         if (result.picks) {
             return result.picks.map((p: any) => ({
                 ...p,
-                confidence: parseInt(p.probability) > 75 ? 'Very High' : 'High',
-                sources: sources.map((s: any) => s.web?.uri).filter(Boolean).slice(0, 2)
+                sources: grounding.map((g: any) => g.web?.uri).filter(Boolean).slice(0, 2)
             }));
         }
         return [];
     } catch (error) {
-        console.error("Erreur Moteur NextWin:", error);
+        console.error("Erreur Moteur Search:", error);
         return [];
     }
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
-    if (!API_KEY || API_KEY.length < 10) return {
-        detailedAnalysis: "Clé API invalide.",
-        successProbability: "0%",
-        riskAssessment: "High",
-        aiOpinion: "Erreur",
-        sources: []
-    };
+    if (!API_KEY || API_KEY.length < 10) return { detailedAnalysis: "Erreur Clé", successProbability: "0%", riskAssessment: "High", aiOpinion: "Error", sources: [] };
 
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const currentContext = getParisTimeContext();
+    const today = getParisContext();
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Analyse précise pour le match : ${request.match}. 
-            Type de pari : ${request.betType}. 
-            Date actuelle : ${currentContext}.
-            
-            RECHERCHE OBLIGATOIRE :
-            - Le match existe-t-il vraiment à cette date ?
-            - Compositions d'équipes et blessés réels.
-            - Dynamique des 5 derniers matchs.
-            - Météo et cotes actuelles.`,
+            contents: `Analyse RECHERCHÉE pour : ${request.match} (${request.sport}). Pari : ${request.betType}.
+            Date et Heure à Paris : ${today}.
+            1. Effectue une recherche Google sur l'état de forme RÉEL des équipes/joueurs.
+            2. Vérifie la liste des blessés du jour.
+            3. Cite les dernières cotes réelles du marché.`,
             config: {
                 tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
@@ -117,7 +105,7 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
                     properties: {
                         detailedAnalysis: { type: Type.STRING },
                         successProbability: { type: Type.STRING },
-                        riskAssessment: { type: Type.STRING, enum: ['Low', 'Medium', 'High'] },
+                        riskAssessment: { type: Type.STRING },
                         aiOpinion: { type: Type.STRING },
                         matchDate: { type: Type.STRING },
                         matchTime: { type: Type.STRING },
@@ -136,11 +124,10 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
             }
         });
 
-        const result = JSON.parse(response.text || "{}");
-        return result;
+        return JSON.parse(response.text || "{}");
     } catch (error) {
         return {
-            detailedAnalysis: "Le match demandé semble inexistant ou l'IA n'a pas pu confirmer les données en temps réel.",
+            detailedAnalysis: "L'IA n'a pas pu confirmer l'existence de ce match ou les données sont indisponibles via Google Search.",
             successProbability: "0%",
             riskAssessment: "High",
             aiOpinion: "Analyse annulée par sécurité.",
