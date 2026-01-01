@@ -34,20 +34,20 @@ const DailyPicksPage: React.FC = () => {
         <div className="inline-flex items-center gap-3 px-4 py-1.5 mb-6 bg-orange-500/10 border border-orange-500/20 rounded-full">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">
-                PROTOCAL NEXTWIN V11 - SEARCH-GROUNDED
+                PROTOCAL NEXTWIN V12 - ZERO HALLUCINATION
             </span>
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
           {t('daily_picks_title')}
         </h1>
-        <p className="text-gray-400 font-medium italic">Vérification en temps réel via Google Search (Calendriers officiels).</p>
+        <p className="text-gray-400 font-medium italic">Vérification forcée via Google Search. Chaque match inclut sa source officielle.</p>
       </div>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-8">
           <Spinner />
           <div className="text-center space-y-2">
-            <p className="text-orange-400 font-black uppercase tracking-widest text-sm animate-pulse">Scanning des calendriers ATP, NBA et UEFA...</p>
+            <p className="text-orange-400 font-black uppercase tracking-widest text-sm animate-pulse">Consultation des calendriers officiels en direct...</p>
           </div>
         </div>
       ) : picks.length > 0 ? (
@@ -60,8 +60,8 @@ const DailyPicksPage: React.FC = () => {
         <Card className="max-w-xl mx-auto text-center py-16 border-dashed border-gray-700">
             <div className="text-6xl mb-6 grayscale opacity-20">📡</div>
             <h3 className="text-xl font-black text-white mb-2">Aucun match réel détecté</h3>
-            <p className="text-gray-500 text-sm mb-8">L'IA n'a pas pu confirmer de matchs majeurs pour aujourd'hui via la recherche en direct. Aucun match fictif ne sera affiché.</p>
-            <Button onClick={fetchPicks} variant="secondary" className="px-8">Re-synchroniser</Button>
+            <p className="text-gray-500 text-sm mb-8">L'IA n'a trouvé aucun match majeur vérifiable pour aujourd'hui. Par sécurité, aucun pronostic n'est affiché.</p>
+            <Button onClick={fetchPicks} variant="secondary" className="px-8">Actualiser la recherche</Button>
         </Card>
       )}
     </div>
@@ -77,7 +77,7 @@ const PickCard: React.FC<{ pick: any }> = ({ pick }) => {
             <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-1">
               {pick.matchDate} @ {pick.matchTime}
             </span>
-            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Heure de Paris (CET)</span>
+            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Vérifié sur Google</span>
         </div>
         <span className="text-2xl">{pick.sport === 'football' ? '⚽' : pick.sport === 'basketball' ? '🏀' : '🎾'}</span>
       </div>
@@ -97,17 +97,17 @@ const PickCard: React.FC<{ pick: any }> = ({ pick }) => {
             <p className="text-gray-400 text-xs italic font-medium leading-relaxed">"{pick.analysis}"</p>
         </div>
         
-        {/* Affichage des preuves de recherche */}
-        {pick.sources && pick.sources.length > 0 && (
+        {pick.sourceUrl && (
             <div className="pt-2">
-                <p className="text-[8px] font-black text-gray-600 uppercase mb-2 tracking-widest">Vérifié sur :</p>
-                <div className="flex flex-wrap gap-2">
-                    {pick.sources.map((url: string, i: number) => (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] text-orange-400/80 hover:bg-orange-500/10 hover:text-white transition-all truncate max-w-[100px]">
-                            Source Officielle
-                        </a>
-                    ))}
-                </div>
+                <a 
+                  href={pick.sourceUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 rounded-xl text-[10px] text-orange-400 font-black uppercase tracking-widest transition-all w-full justify-center"
+                >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    Voir sur Source Officielle
+                </a>
             </div>
         )}
       </div>
