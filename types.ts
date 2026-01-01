@@ -20,9 +20,10 @@ export interface DailyPick {
   betType: string;
   probability: string;
   analysis: string;
-  confidence: 'High' | 'Very High';
   matchDate: string;
   matchTime: string;
+  sourceUrl: string;
+  isVerified: boolean;
 }
 
 export interface AnalysisRequest {
