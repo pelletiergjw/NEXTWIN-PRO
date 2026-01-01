@@ -3,86 +3,61 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, DailyPick } from '../types';
 
 /**
- * NEXTWIN QUANTUM ENGINE v8.0 - PRODUCTION READY
- * Système d'intelligence temps réel optimisé pour le marché français.
+ * NEXTWIN QUANTUM ENGINE v9.0 - REAL-TIME TRUTH
+ * Moteur optimisé pour l'exactitude des données sportives et la synchronisation CET/CEST.
  */
 
 const API_KEY = process.env.API_KEY || "";
 
-// Utilitaire de gestion du temps (Heure de Paris obligatoire)
-const getFrenchContext = () => {
+// Utilitaire de contexte temporel précis pour la France
+const getParisContext = () => {
     const now = new Date();
-    const dateStr = now.toLocaleString('fr-FR', { 
+    const options: Intl.DateTimeFormatOptions = {
         timeZone: 'Europe/Paris',
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
-    });
-    const timeStr = now.toLocaleString('fr-FR', { 
-        timeZone: 'Europe/Paris',
+        year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
-    });
-    return { full: `${dateStr} à ${timeStr}`, date: dateStr, time: timeStr };
-};
-
-// --- MOTEUR DE SECOURS (MODE DÉMO / FALLBACK) ---
-// Note : Si l'API Key est absente ou échoue, on ne renvoie plus de "faux matchs" réels
-// mais des exemples pédagogiques pour ne pas induire le client en erreur.
-const getHeuristicDailyPicks = (language: string): DailyPick[] => {
-    const ctx = getFrenchContext();
-    return [
-        {
-            sport: 'football',
-            match: language === 'fr' ? "Match Simulation A vs B" : "Simulation Match A vs B",
-            betType: "Plus de 2.5 buts",
-            probability: "75%",
-            analysis: language === 'fr' ? "MODE DÉMO : Connectez votre API Key pour voir les matchs réels d'aujourd'hui." : "DEMO MODE: Connect API Key for real-time matches.",
-            confidence: 'High',
-            matchDate: ctx.date,
-            matchTime: "18:00"
-        },
-        {
-            sport: 'basketball',
-            match: language === 'fr' ? "Simulation NBA : Est vs Ouest" : "NBA Sim: East vs West",
-            betType: "Vainqueur",
-            probability: "60%",
-            analysis: "Simulation statistique basée sur l'historique.",
-            confidence: 'High',
-            matchDate: ctx.date,
-            matchTime: "02:00"
-        },
-        {
-            sport: 'tennis',
-            match: language === 'fr' ? "Exemple : Joueur X vs Joueur Y" : "Example: Player X vs Player Y",
-            betType: "Nombre de Sets: 3",
-            probability: "55%",
-            analysis: "Modèle probabiliste de démonstration.",
-            confidence: 'High',
-            matchDate: ctx.date,
-            matchTime: "14:00"
-        }
-    ];
+        minute: '2-digit',
+        hour12: false
+    };
+    const formatter = new Intl.DateTimeFormat('fr-FR', options);
+    const parts = formatter.formatToParts(now);
+    const getPart = (type: string) => parts.find(p => p.type === type)?.value || "";
+    
+    const dateStr = `${getPart('day')}/${getPart('month')}/${getPart('year')}`;
+    const timeStr = `${getPart('hour')}:${getPart('minute')}`;
+    
+    return { 
+        full: `${dateStr} à ${timeStr} (Heure de Paris)`, 
+        date: dateStr, 
+        time: timeStr 
+    };
 };
 
 // --- LOGIQUE DE ROUTAGE API ---
 export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
-    if (!API_KEY || API_KEY.length < 10) return getHeuristicDailyPicks(language);
+    if (!API_KEY || API_KEY.length < 10) {
+        console.warn("NextWin : Clé API absente. Aucun pronostic fictif ne sera généré.");
+        return []; // On ne renvoie rien pour éviter les bugs de lecture de faux matchs
+    }
+
+    const ctx = getParisContext();
 
     try {
         const ai = new GoogleGenAI({ apiKey: API_KEY });
-        const ctx = getFrenchContext();
-        
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Nous sommes le ${ctx.full} à Paris.
-            INSTRUCTIONS CRITIQUES :
-            1. Utilise Google Search pour trouver 9 VRAIS matchs de sport (3 Foot, 3 Basket, 3 Tennis) qui ont lieu AUJOURD'HUI ou DEMAIN.
-            2. Ne génère AUCUN match imaginaire. Si un match n'est pas programmé, cherche-en un autre.
-            3. Vérifie les blessures majeures (ex: Mbappe, Vinicius, Durant, Sinner) et les suspensions.
-            4. Toutes les heures doivent être au format français (CET/CEST).
-            5. Calcule des probabilités réalistes pour : Victoire, Over/Under, Handicaps, ou Buteurs.
-            6. Langue : ${language}.`,
+            contents: `CONTEXTE : Nous sommes le ${ctx.full}. 
+            MISSION : Agis en tant qu'expert analyste sportif. Tu DOIS utiliser l'outil googleSearch pour identifier 9 matchs RÉELS (3 Foot, 3 Basket, 3 Tennis) programmés entre maintenant et demain soir.
+            
+            INSTRUCTIONS STRICTES :
+            1. VÉRIFICATION : Utilise Google Search pour confirmer que les matchs existent vraiment (Calendriers ATP, NBA, Championnats Foot).
+            2. ACTUALITÉS : Vérifie les blessures de dernière minute (ex: état de Mbappe, Curry, blessures à l'échauffement en Tennis).
+            3. HEURES : Convertis toutes les heures de début en HEURE FRANÇAISE (CET/CEST).
+            4. MARCHÉS : Propose des types de paris variés : Handicaps (Points/Sets), Over/Under, Victoires sèches, Buteurs.
+            5. PROBABILITÉS : Calcule une probabilité basée sur les cotes réelles et la forme actuelle.
+            6. SORTIE : Format JSON uniquement. Ne propose JAMAIS de match imaginaire.`,
             config: {
                 tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
@@ -95,13 +70,13 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
                                 type: Type.OBJECT,
                                 properties: {
                                     sport: { type: Type.STRING, enum: ['football', 'basketball', 'tennis'] },
-                                    match: { type: Type.STRING },
-                                    betType: { type: Type.STRING },
-                                    probability: { type: Type.STRING },
-                                    analysis: { type: Type.STRING },
+                                    match: { type: Type.STRING, description: "Nom exact des opposants" },
+                                    betType: { type: Type.STRING, description: "Type de pari (ex: Handicap -1.5, Buteur...)" },
+                                    probability: { type: Type.STRING, description: "Format 00%" },
+                                    analysis: { type: Type.STRING, description: "Analyse incluant blessés/absents réels" },
                                     confidence: { type: Type.STRING, enum: ['High', 'Very High'] },
-                                    matchDate: { type: Type.STRING },
-                                    matchTime: { type: Type.STRING }
+                                    matchDate: { type: Type.STRING, description: "Format DD/MM/YYYY" },
+                                    matchTime: { type: Type.STRING, description: "Format HH:MM (Heure de Paris)" }
                                 },
                                 required: ['sport', 'match', 'betType', 'probability', 'analysis', 'confidence', 'matchDate', 'matchTime']
                             }
@@ -112,21 +87,21 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]>
         });
 
         const result = JSON.parse(response.text || "{}");
-        return result.picks || getHeuristicDailyPicks(language);
+        return result.picks || [];
     } catch (error) {
-        console.error("NextWin Engine Failover");
-        return getHeuristicDailyPicks(language);
+        console.error("Erreur critique NextWin Engine:", error);
+        return [];
     }
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
-    const ctx = getFrenchContext();
+    const ctx = getParisContext();
     if (!API_KEY || API_KEY.length < 10) {
         return {
-            detailedAnalysis: "Mode Dégradé : Analyse Quantum impossible sans clé API valide.",
-            successProbability: "50%",
-            riskAssessment: "Medium",
-            aiOpinion: "Pari non analysé en temps réel.",
+            detailedAnalysis: "Analyse impossible sans clé API. Connectez votre moteur Quantum.",
+            successProbability: "0%",
+            riskAssessment: "High",
+            aiOpinion: "Connexion Cloud requise.",
             matchDate: ctx.date,
             matchTime: ctx.time,
             sources: []
@@ -137,14 +112,16 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
         const ai = new GoogleGenAI({ apiKey: API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Analyse détaillée pour ${request.match} (${request.sport}) sur le pari "${request.betType}".
+            contents: `ANALYSE EXPERTE : Match ${request.match} (${request.sport}). Type de pari : ${request.betType}.
             Heure actuelle à Paris : ${ctx.full}.
             
-            ÉTAPE 1 : Recherche Google Search sur l'actualité du match (blessés, suspendus, météo, enjeux).
-            ÉTAPE 2 : Analyse des cotes et probabilités mathématiques.
-            ÉTAPE 3 : Vérification de l'heure exacte du coup d'envoi à Paris.
+            PROTOCOLE DE RECHERCHE OBLIGATOIRE :
+            1. Recherche l'heure réelle du match et la date.
+            2. Recherche la liste des blessés, suspendus et transferts récents impactant les deux camps.
+            3. Analyse la météo et les stats H2H récentes (6 derniers mois).
+            4. Détermine la probabilité mathématique exacte de succès.
             
-            Rédige en ${language}.`,
+            Réponds en ${language}. Toutes les heures doivent être en heure de Paris.`,
             config: { 
                 tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
@@ -174,20 +151,20 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
 
         const result = JSON.parse(response.text || "{}");
         return {
-            detailedAnalysis: result.detailedAnalysis || "Analyse indisponible.",
-            successProbability: result.successProbability || "60%",
-            riskAssessment: result.riskAssessment || "Medium",
-            aiOpinion: result.aiOpinion || "Avis réservé.",
+            detailedAnalysis: result.detailedAnalysis || "Échec de l'extraction des données.",
+            successProbability: result.successProbability || "50%",
+            riskAssessment: result.riskAssessment || "High",
+            aiOpinion: result.aiOpinion || "Vérifiez les sources manuellement.",
             matchDate: result.matchDate || ctx.date,
             matchTime: result.matchTime || ctx.time,
             sources: result.sources || []
         };
     } catch (error) {
         return {
-            detailedAnalysis: "Erreur de connexion aux serveurs de recherche.",
+            detailedAnalysis: "Erreur réseau : Impossible de contacter le moteur de recherche.",
             successProbability: "0%",
             riskAssessment: "High",
-            aiOpinion: "Échec de l'analyse.",
+            aiOpinion: "Service temporairement indisponible.",
             matchDate: ctx.date,
             matchTime: ctx.time,
             sources: []
