@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-/* ---------------- UTILS ---------------- */
+/* ---------- UTILS ---------- */
 
-function random(min: number, max: number) {
+function rand(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -11,40 +11,38 @@ function frenchDate(hoursOffset: number) {
   d.setHours(d.getHours() + hoursOffset);
 
   return {
-    date: d.toLocaleDateString("fr-FR", {
-      timeZone: "Europe/Paris"
-    }),
+    date: d.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" }),
     time: d.toLocaleTimeString("fr-FR", {
       timeZone: "Europe/Paris",
       hour: "2-digit",
-      minute: "2-digit"
-    })
+      minute: "2-digit",
+    }),
   };
 }
 
-/* ---------------- MATCHS INTERNES ---------------- */
+/* ---------- MATCHS INTERNES ---------- */
 
 const FOOTBALL = [
   "PSG vs Marseille",
   "Real Madrid vs Sevilla",
-  "Bayern Munich vs Leipzig"
+  "Bayern Munich vs Leipzig",
 ];
 
 const BASKET = [
   "Lakers vs Warriors",
   "Celtics vs Heat",
-  "Bucks vs Knicks"
+  "Bucks vs Knicks",
 ];
 
 const TENNIS = [
   "Djokovic vs Alcaraz",
   "Sinner vs Medvedev",
-  "Zverev vs Tsitsipas"
+  "Zverev vs Tsitsipas",
 ];
 
-/* ---------------- GÉNÉRATION ---------------- */
+/* ---------- GÉNÉRATION ---------- */
 
-function generatePronostics() {
+function generatePicks() {
   const picks: any[] = [];
 
   FOOTBALL.forEach((match, i) => {
@@ -53,9 +51,9 @@ function generatePronostics() {
       sport: "football",
       match,
       betType: "Double chance (Victoire ou Nul)",
-      probability: `${random(72, 85)}%`,
+      probability: `${rand(72, 85)}%`,
       matchDate: fr.date,
-      matchTime: fr.time
+      matchTime: fr.time,
     });
   });
 
@@ -65,9 +63,9 @@ function generatePronostics() {
       sport: "basketball",
       match,
       betType: "Vainqueur du match",
-      probability: `${random(74, 88)}%`,
+      probability: `${rand(74, 88)}%`,
       matchDate: fr.date,
-      matchTime: fr.time
+      matchTime: fr.time,
     });
   });
 
@@ -77,22 +75,25 @@ function generatePronostics() {
       sport: "tennis",
       match,
       betType: "Vainqueur du match",
-      probability: `${random(70, 82)}%`,
+      probability: `${rand(70, 82)}%`,
       matchDate: fr.date,
-      matchTime: fr.time
+      matchTime: fr.time,
     });
   });
 
   return picks;
 }
 
-/* ---------------- API ---------------- */
+/* ---------- API ---------- */
 
-export async function GET() {
-  return NextResponse.json({
+export default function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  res.status(200).json({
     generatedAt: new Date().toLocaleString("fr-FR", {
-      timeZone: "Europe/Paris"
+      timeZone: "Europe/Paris",
     }),
-    picks: generatePronostics()
+    picks: generatePicks(),
   });
 }
