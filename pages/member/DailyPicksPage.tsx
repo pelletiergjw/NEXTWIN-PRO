@@ -5,12 +5,11 @@ import Button from '../../components/ui/Button';
 import Spinner from '../../components/ui/Spinner';
 import ProbabilityGauge from '../../components/ui/ProbabilityGauge';
 import { getDailyPicks } from '../../services/geminiService';
-import type { DailyPick } from '../../types';
 import { useLanguage } from '../../hooks/useLanguage';
 
 const DailyPicksPage: React.FC = () => {
   const { t, language } = useLanguage();
-  const [picks, setPicks] = useState<DailyPick[]>([]);
+  const [picks, setPicks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPicks = async () => {
@@ -19,7 +18,7 @@ const DailyPicksPage: React.FC = () => {
         const data = await getDailyPicks(language);
         setPicks(data);
     } catch (e) {
-        console.error("Fetch Error");
+        console.error("DailyPicks Fail");
     } finally {
         setIsLoading(false);
     }
@@ -35,34 +34,34 @@ const DailyPicksPage: React.FC = () => {
         <div className="inline-flex items-center gap-3 px-4 py-1.5 mb-6 bg-orange-500/10 border border-orange-500/20 rounded-full">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">
-                NEXTWIN ENGINE V10 - GROUNDED DATA
+                PROTOCAL NEXTWIN V11 - SEARCH-GROUNDED
             </span>
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
           {t('daily_picks_title')}
         </h1>
-        <p className="text-gray-400 font-medium">Pronostics basés sur des calendriers et blessures vérifiés en temps réel.</p>
+        <p className="text-gray-400 font-medium italic">Vérification en temps réel via Google Search (Calendriers officiels).</p>
       </div>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-8">
           <Spinner />
           <div className="text-center space-y-2">
-            <p className="text-orange-400 font-bold animate-pulse uppercase tracking-widest text-sm">Synchronisation avec les calendriers officiels...</p>
+            <p className="text-orange-400 font-black uppercase tracking-widest text-sm animate-pulse">Scanning des calendriers ATP, NBA et UEFA...</p>
           </div>
         </div>
       ) : picks.length > 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fadeIn">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {picks.map((pick, idx) => (
             <PickCard key={idx} pick={pick} />
           ))}
         </div>
       ) : (
         <Card className="max-w-xl mx-auto text-center py-16 border-dashed border-gray-700">
-            <div className="text-6xl mb-6 opacity-20">📡</div>
-            <h3 className="text-xl font-black text-white mb-2">Aucun match réel trouvé</h3>
-            <p className="text-gray-500 text-sm mb-8">L'IA n'a trouvé aucun match majeur aujourd'hui ou votre clé API est mal configurée. Aucun match fictif ne sera affiché.</p>
-            <Button onClick={fetchPicks} variant="secondary" className="px-8">Relancer la recherche</Button>
+            <div className="text-6xl mb-6 grayscale opacity-20">📡</div>
+            <h3 className="text-xl font-black text-white mb-2">Aucun match réel détecté</h3>
+            <p className="text-gray-500 text-sm mb-8">L'IA n'a pas pu confirmer de matchs majeurs pour aujourd'hui via la recherche en direct. Aucun match fictif ne sera affiché.</p>
+            <Button onClick={fetchPicks} variant="secondary" className="px-8">Re-synchroniser</Button>
         </Card>
       )}
     </div>
@@ -74,31 +73,41 @@ const PickCard: React.FC<{ pick: any }> = ({ pick }) => {
   return (
     <Card className="flex flex-col h-full border-gray-800/40 hover:border-orange-500/30 transition-all rounded-[2rem] p-8 bg-[#1C1C2B] group shadow-xl">
       <div className="flex justify-between items-start mb-6">
-        <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20">
-          {pick.matchDate} - {pick.matchTime}
-        </span>
+        <div className="flex flex-col">
+            <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-1">
+              {pick.matchDate} @ {pick.matchTime}
+            </span>
+            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Heure de Paris (CET)</span>
+        </div>
         <span className="text-2xl">{pick.sport === 'football' ? '⚽' : pick.sport === 'basketball' ? '🏀' : '🎾'}</span>
       </div>
-      <h3 className="text-xl font-black text-white mb-1 leading-tight">{pick.match}</h3>
+      <h3 className="text-xl font-black text-white mb-1 leading-tight group-hover:text-orange-400 transition-colors">{pick.match}</h3>
       <p className="text-orange-400 font-bold text-sm mb-6 uppercase tracking-wide">{pick.betType}</p>
+      
       <div className="mb-6">
         <div className="flex justify-between items-end mb-2">
-          <span className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Confiance Algo</span>
+          <span className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">IA CONFIDENCE</span>
           <span className="text-lg font-black text-white">{pick.probability}</span>
         </div>
         <ProbabilityGauge probability={probValue} />
       </div>
+
       <div className="mt-auto space-y-4">
         <div className="pt-4 border-t border-gray-800/60">
             <p className="text-gray-400 text-xs italic font-medium leading-relaxed">"{pick.analysis}"</p>
         </div>
+        
+        {/* Affichage des preuves de recherche */}
         {pick.sources && pick.sources.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-2">
-                {pick.sources.map((url: string, i: number) => (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-[8px] text-orange-500/60 hover:text-orange-400 underline truncate max-w-[120px]">
-                        Source officielle {i+1}
-                    </a>
-                ))}
+            <div className="pt-2">
+                <p className="text-[8px] font-black text-gray-600 uppercase mb-2 tracking-widest">Vérifié sur :</p>
+                <div className="flex flex-wrap gap-2">
+                    {pick.sources.map((url: string, i: number) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] text-orange-400/80 hover:bg-orange-500/10 hover:text-white transition-all truncate max-w-[100px]">
+                            Source Officielle
+                        </a>
+                    ))}
+                </div>
             </div>
         )}
       </div>
