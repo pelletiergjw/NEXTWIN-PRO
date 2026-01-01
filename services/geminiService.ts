@@ -3,20 +3,18 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, DailyPick } from '../types';
 
 /**
- * NEXTWIN QUANTUM SEARCH ENGINE v11.0
- * AUCUNE DONNÉE FICTIVE TOLÉRÉE. RECHERCHE GOOGLE OBLIGATOIRE.
+ * NEXTWIN ULTIMATE TRUTH ENGINE v12.0
+ * PROTOCOLE ANTI-HALLUCINATION : RECHERCHE FORCÉE AVEC PREUVE URL
  */
 
 const API_KEY = process.env.API_KEY || "";
 
-const getParisContext = () => {
+const getParisTime = () => {
     return new Date().toLocaleString('fr-FR', { 
         timeZone: 'Europe/Paris',
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        year: 'numeric'
     });
 };
 
@@ -24,23 +22,24 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<any[]> => {
     if (!API_KEY || API_KEY.length < 10) return [];
 
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const today = getParisContext();
+    const todayStr = getParisTime();
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `AUJOURD'HUI : ${today} à Paris.
+            model: 'gemini-3-pro-preview', // Passage au modèle Pro pour une meilleure gestion du search
+            contents: `Aujourd'hui nous sommes le ${todayStr}. 
             
-            MISSION CRITIQUE : 
-            1. Utilise GOOGLE SEARCH pour trouver 9 matchs RÉELS se déroulant entre MAINTENANT et DEMAIN SOIR.
-            2. Tu DOIS chercher spécifiquement sur : "Flashscore matches aujourd'hui", "L'équipe calendrier foot", "NBA schedule today", "ATP live scores".
-            3. INTERDIT de citer : Bayern vs Dortmund, Real vs Barca ou tout match classique s'ils ne jouent pas VRAIMENT.
-            4. Pour chaque match, vérifie les absences réelles (ex: blessure de Mbappé, absence de Curry).
-            5. Si tu n'as pas de certitude via la recherche, ne propose pas le match.
+            TACHE : Trouve 9 matchs RÉELS (3 Foot, 3 Basket, 3 Tennis) programmés pour AUJOURD'HUI ou DEMAIN.
             
-            SORTIE : JSON avec les champs 'match', 'sport', 'betType', 'probability', 'analysis', 'matchDate', 'matchTime'.`,
+            RÈGLES CRITIQUES :
+            1. Utilise Google Search pour vérifier les calendriers sur Flashscore, L'Équipe, ou ESPN.
+            2. Tu DOIS fournir pour chaque match une 'sourceUrl' réelle (ex: lien vers le match sur flashscore).
+            3. Si tu ne trouves pas de match réel pour un sport, laisse la liste vide pour ce sport. 
+            4. NE CITE PAS de matchs comme Bayern vs Dortmund ou Real vs Barca s'ils ne jouent pas aujourd'hui.
+            5. Vérifie les blessés réels (ex: Est-ce que Curry ou Mbappé jouent vraiment ce soir ?).`,
             config: {
                 tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 2000 }, // Force le raisonnement sur la date
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
@@ -56,9 +55,10 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<any[]> => {
                                     probability: { type: Type.STRING },
                                     analysis: { type: Type.STRING },
                                     matchDate: { type: Type.STRING },
-                                    matchTime: { type: Type.STRING }
+                                    matchTime: { type: Type.STRING },
+                                    sourceUrl: { type: Type.STRING, description: "URL réelle du match vérifiée via Google" }
                                 },
-                                required: ['sport', 'match', 'betType', 'probability', 'analysis', 'matchDate', 'matchTime']
+                                required: ['sport', 'match', 'betType', 'probability', 'analysis', 'matchDate', 'matchTime', 'sourceUrl']
                             }
                         }
                     }
@@ -67,38 +67,35 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<any[]> => {
         });
 
         const result = JSON.parse(response.text || "{}");
-        const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
         
-        // On attache les sources réelles à chaque pronostic pour prouver la véracité
         if (result.picks) {
-            return result.picks.map((p: any) => ({
-                ...p,
-                sources: grounding.map((g: any) => g.web?.uri).filter(Boolean).slice(0, 2)
-            }));
+            // Filtrage de sécurité : on ne garde que les matchs qui ont une URL source crédible
+            return result.picks.filter((p: any) => 
+                p.sourceUrl && (p.sourceUrl.includes('flashscore') || p.sourceUrl.includes('lequipe') || p.sourceUrl.includes('espn') || p.sourceUrl.includes('atptour'))
+            );
         }
         return [];
     } catch (error) {
-        console.error("Erreur Moteur Search:", error);
+        console.error("Search Engine Error:", error);
         return [];
     }
 };
 
 export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
-    if (!API_KEY || API_KEY.length < 10) return { detailedAnalysis: "Erreur Clé", successProbability: "0%", riskAssessment: "High", aiOpinion: "Error", sources: [] };
+    if (!API_KEY || API_KEY.length < 10) return { detailedAnalysis: "Clé API invalide.", successProbability: "0%", riskAssessment: "High", aiOpinion: "Erreur", sources: [] };
 
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const today = getParisContext();
+    const today = getParisTime();
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Analyse RECHERCHÉE pour : ${request.match} (${request.sport}). Pari : ${request.betType}.
-            Date et Heure à Paris : ${today}.
-            1. Effectue une recherche Google sur l'état de forme RÉEL des équipes/joueurs.
-            2. Vérifie la liste des blessés du jour.
-            3. Cite les dernières cotes réelles du marché.`,
+            model: 'gemini-3-pro-preview',
+            contents: `Analyse détaillée pour : ${request.match}. Pari : ${request.betType}.
+            Date actuelle : ${today}.
+            Effectue une recherche approfondie sur les compositions d'équipes et les blessés de DERNIÈRE MINUTE.`,
             config: {
                 tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 1500 },
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
@@ -127,10 +124,10 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
         return JSON.parse(response.text || "{}");
     } catch (error) {
         return {
-            detailedAnalysis: "L'IA n'a pas pu confirmer l'existence de ce match ou les données sont indisponibles via Google Search.",
+            detailedAnalysis: "Analyse impossible. Le match n'a pas pu être vérifié en temps réel.",
             successProbability: "0%",
             riskAssessment: "High",
-            aiOpinion: "Analyse annulée par sécurité.",
+            aiOpinion: "Échec de la vérification Google Search.",
             sources: []
         };
     }
