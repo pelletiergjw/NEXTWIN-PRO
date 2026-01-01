@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 /* ---------- UTILS ---------- */
 
-function rand(min: number, max: number): number {
+function random(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -51,7 +51,7 @@ function generatePicks() {
       sport: "football",
       match,
       betType: "Double chance (Victoire ou Nul)",
-      probability: `${rand(72, 85)}%`,
+      probability: `${random(72, 85)}%`,
       matchDate: fr.date,
       matchTime: fr.time,
     });
@@ -63,7 +63,7 @@ function generatePicks() {
       sport: "basketball",
       match,
       betType: "Vainqueur du match",
-      probability: `${rand(74, 88)}%`,
+      probability: `${random(74, 88)}%`,
       matchDate: fr.date,
       matchTime: fr.time,
     });
@@ -75,7 +75,7 @@ function generatePicks() {
       sport: "tennis",
       match,
       betType: "Vainqueur du match",
-      probability: `${rand(70, 82)}%`,
+      probability: `${random(70, 82)}%`,
       matchDate: fr.date,
       matchTime: fr.time,
     });
@@ -90,10 +90,16 @@ export default function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  res.status(200).json({
-    generatedAt: new Date().toLocaleString("fr-FR", {
-      timeZone: "Europe/Paris",
-    }),
-    picks: generatePicks(),
-  });
+  try {
+    const picks = generatePicks();
+    res.status(200).json({
+      generatedAt: new Date().toLocaleString("fr-FR", {
+        timeZone: "Europe/Paris",
+      }),
+      picks,
+    });
+  } catch (error) {
+    // fallback si jamais
+    res.status(500).json({ error: "Impossible de générer les pronostics." });
+  }
 }
