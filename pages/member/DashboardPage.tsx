@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,7 +10,6 @@ const DashboardPage: React.FC = () => {
   const { user, isSubscribed } = useAuth();
   const { t } = useLanguage();
   
-  // Le système est toujours stable maintenant grâce au mode Quantum
   // @ts-ignore
   const isKeyActive = !!process.env.API_KEY && process.env.API_KEY.length > 10;
 
@@ -21,10 +21,10 @@ const DashboardPage: React.FC = () => {
             <p className="text-base md:text-lg text-gray-400 font-medium">{t('dashboard_welcome')} {user?.name}!</p>
         </div>
         
-        {/* Status Badge - Toujours positif pour l'UX */}
-        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest bg-green-500/10 border-green-500/20 text-green-400 shadow-lg shadow-green-500/5`}>
-            <span className={`w-1.5 h-1.5 rounded-full bg-green-500 ${isKeyActive ? 'animate-pulse' : ''}`}></span>
-            {isKeyActive ? 'Moteur IA : Quantum Cloud' : 'Moteur IA : Quantum Local Stable'}
+        {/* Status Badge - Nouveau système de détection */}
+        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${isKeyActive ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-orange-500/10 border-orange-500/20 text-orange-400'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isKeyActive ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`}></span>
+            {isKeyActive ? t('engine_status_active') : t('engine_status_simulation')}
         </div>
       </div>
 
