@@ -1,148 +1,113 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import type { AnalysisRequest, AnalysisResult, DailyPick } from '../types';
+import { NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-/**
- * NEXTWIN QUANTUM ENGINE v7.0
- * Système de secours heuristique intelligent - Indépendant de l'API
- */
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-const API_KEY = process.env.API_KEY || "";
+function toFrenchDateTime(utc: string) {
+  const date = new Date(utc);
+  return {
+    date: date.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" }),
+    time: date.toLocaleTimeString("fr-FR", {
+      timeZone: "Europe/Paris",
+      hour: "2-digit",
+      minute: "2-digit"
+    })
+  };
+}
 
-// --- MOTEUR STATISTIQUE LOCAL (HEURISTIQUE) ---
-const generateHeuristicAnalysis = (request: AnalysisRequest): AnalysisResult['response'] => {
-    const teams = request.match.split(' vs ');
-    const t1 = teams[0] || "Équipe A";
-    const t2 = teams[1] || "Équipe B";
-    
-    // Algorithme de génération de probabilité déterministe basé sur les noms
-    const seed = (t1.length + t2.length + request.betType.length) % 30;
-    const baseProb = 60 + seed;
-    
-    return {
-        detailedAnalysis: `Analyse Quantum : Le match entre ${t1} et ${t2} présente des indicateurs de performance divergents. Les modèles statistiques montrent une corrélation forte sur le marché "${request.betType}". La dynamique récente de ${t1} suggère une exploitation optimale des espaces, tandis que ${t2} montre une fragilité structurelle en transition. L'avantage algorithmique se porte sur une stratégie de couverture modérée.`,
-        successProbability: `${baseProb}%`,
-        riskAssessment: baseProb > 75 ? 'Low' : baseProb > 65 ? 'Medium' : 'High',
-        aiOpinion: `NextWin recommande de suivre ${t1} avec une unité de mise prudente.`,
-        matchDate: "Aujourd'hui",
-        matchTime: "Live",
-        sources: []
-    };
-};
+/* -------- MOCK DATA (REMPLACE PAR TES APIS SPORT) -------- */
+function getMatches() {
+  return {
+    football: [
+      { match: "PSG vs Marseille", utc: "2026-01-09T20:00:00Z" },
+      { match: "Real Madrid vs Sevilla", utc: "2026-01-09T18:00:00Z" },
+      { match: "Bayern vs Leipzig", utc: "2026-01-09T19:30:00Z" }
+    ],
+    basketball: [
+      { match: "Lakers vs Warriors", utc: "2026-01-10T01:30:00Z" },
+      { match: "Celtics vs Heat", utc: "2026-01-10T00:00:00Z" },
+      { match: "Bucks vs Knicks", utc: "2026-01-10T02:00:00Z" }
+    ],
+    tennis: [
+      { match: "Djokovic vs Alcaraz", utc: "2026-01-09T13:00:00Z" },
+      { match: "Sinner vs Medvedev", utc: "2026-01-09T15:00:00Z" },
+      { match: "Zverev vs Tsitsipas", utc: "2026-01-09T17:00:00Z" }
+    ]
+  };
+}
 
-const getHeuristicDailyPicks = (language: string): DailyPick[] => {
-    const sports: ('football' | 'basketball' | 'tennis')[] = ['football', 'basketball', 'tennis'];
-    const picks: DailyPick[] = [];
-    
-    // Générateur de 9 pronostics réalistes
-    const data = [
-        { f: "Bayern vs Dortmund", b: "Lakers vs Celtics", t: "Djokovic vs Alcaraz", p: "74%", bt: "Victoire Domicile" },
-        { f: "Arsenal vs Chelsea", b: "Bucks vs Sixers", t: "Sinner vs Medvedev", p: "68%", bt: "Over 2.5 Buts" },
-        { f: "Inter vs Milan", b: "Nuggets vs Suns", t: "Sabalenka vs Swiatek", p: "81%", bt: "Les deux marquent" }
-    ];
+export async function GET() {
+  try {
+    const matches = getMatches();
 
-    data.forEach((row, i) => {
-        picks.push({
-            sport: 'football',
-            match: row.f,
-            betType: row.bt,
-            probability: row.p,
-            analysis: language === 'fr' ? "Analyse basée sur l'historique de performance et la data offensive." : "Analysis based on performance history and offensive data.",
-            confidence: 'High',
-            matchDate: "Aujourd'hui",
-            matchTime: "21:00"
+    const prompt = `
+You are a professional sports betting analyst.
+
+RULES:
+- Return EXACTLY 9 betting picks
+- 3 football, 3 basketball, 3 tennis
+- HIGH probability bets only (70%+)
+- SAFE markets (winner, double chance, over points, match winner)
+- NO risky bets
+
+For each pick return ONLY:
+- sport
+- match
+- betType
+- probability
+- matchDate (FR)
+- matchTime (FR)
+
+Return ONLY valid JSON.
+
+MATCHES:
+${JSON.stringify(matches, null, 2)}
+`;
+
+    const result = await model.generateContent(prompt);
+    const text =
+      result.response.candidates[0].content.parts[0].text;
+
+    const data = JSON.parse(text);
+
+    // Sécurité : toujours 9 pronostics
+    if (!Array.isArray(data) || data.length !== 9) {
+      throw new Error("Invalid picks count");
+    }
+
+    return NextResponse.json({
+      generatedAt: new Date().toLocaleString("fr-FR", {
+        timeZone: "Europe/Paris"
+      }),
+      picks: data
+    });
+  } catch (error) {
+    console.error("Pronostics error:", error);
+
+    // Fallback simple (jamais vide)
+    const fallback = [];
+    const matches = getMatches();
+
+    Object.entries(matches).forEach(([sport, list]: any) => {
+      list.forEach((m: any) => {
+        const fr = toFrenchDateTime(m.utc);
+        fallback.push({
+          sport,
+          match: m.match,
+          betType: "Vainqueur du match",
+          probability: "72%",
+          matchDate: fr.date,
+          matchTime: fr.time
         });
-        picks.push({
-            sport: 'basketball',
-            match: row.b,
-            betType: "Vainqueur",
-            probability: "72%",
-            analysis: language === 'fr' ? "Matchup favorable au niveau du banc et de la rotation." : "Favorable matchup in terms of bench and rotation.",
-            confidence: 'High',
-            matchDate: "Demain",
-            matchTime: "02:30"
-        });
-        picks.push({
-            sport: 'tennis',
-            match: row.t,
-            betType: "Vainqueur Match",
-            probability: "59%",
-            analysis: language === 'fr' ? "Avantage sur surface rapide détecté par le modèle." : "Fast surface advantage detected by the model.",
-            confidence: 'High',
-            matchDate: "Aujourd'hui",
-            matchTime: "15:00"
-        });
+      });
     });
 
-    return picks;
-};
-
-// --- LOGIQUE DE ROUTAGE ---
-export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
-    if (!API_KEY || API_KEY.length < 10) {
-        console.info("NextWin : Utilisation du mode Quantum Heuristique.");
-        return getHeuristicDailyPicks(language);
-    }
-
-    try {
-        const ai = new GoogleGenAI({ apiKey: API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Generate 9 real sports picks. Language: ${language}.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        picks: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    sport: { type: Type.STRING },
-                                    match: { type: Type.STRING },
-                                    betType: { type: Type.STRING },
-                                    probability: { type: Type.STRING },
-                                    analysis: { type: Type.STRING },
-                                    confidence: { type: Type.STRING },
-                                    matchDate: { type: Type.STRING },
-                                    matchTime: { type: Type.STRING }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        const result = JSON.parse(response.text || "{}");
-        return result.picks || getHeuristicDailyPicks(language);
-    } catch (error) {
-        return getHeuristicDailyPicks(language);
-    }
-};
-
-export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 'en'): Promise<AnalysisResult['response']> => {
-    if (!API_KEY || API_KEY.length < 10) {
-        return generateHeuristicAnalysis(request);
-    }
-
-    try {
-        const ai = new GoogleGenAI({ apiKey: API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Analyze ${request.match} for ${request.betType} in ${language}.`,
-            config: { tools: [{ googleSearch: {} }] }
-        });
-
-        return {
-            detailedAnalysis: response.text || "Analyse standard.",
-            successProbability: "72%",
-            riskAssessment: "Medium",
-            aiOpinion: "Pari validé par l'IA.",
-            matchDate: "Ce jour",
-            matchTime: "Prochainement",
-            sources: []
-        };
-    } catch (error) {
-        return generateHeuristicAnalysis(request);
-    }
-};
+    return NextResponse.json({
+      generatedAt: new Date().toLocaleString("fr-FR", {
+        timeZone: "Europe/Paris"
+      }),
+      picks: fallback.slice(0, 9)
+    });
+  }
+}
