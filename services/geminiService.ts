@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 
-/* -------- UTILS -------- */
+/* ---------------- UTILS ---------------- */
 
-function randomBetween(min: number, max: number) {
+function random(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function frenchDate(offsetHours: number) {
+function frenchDate(hoursOffset: number) {
   const d = new Date();
-  d.setHours(d.getHours() + offsetHours);
+  d.setHours(d.getHours() + hoursOffset);
 
   return {
     date: d.toLocaleDateString("fr-FR", {
@@ -22,68 +22,62 @@ function frenchDate(offsetHours: number) {
   };
 }
 
-/* -------- DATA INTERNE (STABLE) -------- */
+/* ---------------- MATCHS INTERNES ---------------- */
 
-const FOOTBALL_MATCHES = [
+const FOOTBALL = [
   "PSG vs Marseille",
   "Real Madrid vs Sevilla",
-  "Bayern Munich vs Leipzig",
-  "Arsenal vs Tottenham",
-  "Inter Milan vs Roma"
+  "Bayern Munich vs Leipzig"
 ];
 
-const BASKET_MATCHES = [
+const BASKET = [
   "Lakers vs Warriors",
   "Celtics vs Heat",
-  "Bucks vs Knicks",
-  "Nuggets vs Suns",
-  "Mavericks vs Clippers"
+  "Bucks vs Knicks"
 ];
 
-const TENNIS_MATCHES = [
+const TENNIS = [
   "Djokovic vs Alcaraz",
   "Sinner vs Medvedev",
-  "Zverev vs Tsitsipas",
-  "Nadal vs Rune",
-  "Rublev vs Hurkacz"
+  "Zverev vs Tsitsipas"
 ];
 
-/* -------- GÉNÉRATEUR PRONOSTICS -------- */
+/* ---------------- GÉNÉRATION ---------------- */
 
-function generatePicks() {
+function generatePronostics() {
   const picks: any[] = [];
 
-  FOOTBALL_MATCHES.slice(0, 3).forEach((match, i) => {
+  FOOTBALL.forEach((match, i) => {
     const fr = frenchDate(2 + i * 2);
     picks.push({
       sport: "football",
       match,
-      betType: "Victoire ou Nul (Double Chance)",
-      probability: `${randomBetween(72, 85)}%`,
+      betType: "Double chance (Victoire ou Nul)",
+      probability: `${random(72, 85)}%`,
       matchDate: fr.date,
       matchTime: fr.time
     });
   });
 
-  BASKET_MATCHES.slice(0, 3).forEach((match, i) => {
+  BASKET.forEach((match, i) => {
     const fr = frenchDate(6 + i * 2);
     picks.push({
       sport: "basketball",
       match,
       betType: "Vainqueur du match",
-      probability: `${randomBetween(74, 88)}%`,
+      probability: `${random(74, 88)}%`,
       matchDate: fr.date,
       matchTime: fr.time
     });
   });
 
-  TENNIS_MATCHES.slice(0, 3).forEach((match, i) => {
+  TENNIS.forEach((match, i) => {
     const fr = frenchDate(1 + i * 3);
     picks.push({
       sport: "tennis",
       match,
       betType: "Vainqueur du match",
-      probability: `${randomBetween(70, 82)}%`,
+      probability: `${random(70, 82)}%`,
       matchDate: fr.date,
       matchTime: fr.time
     });
@@ -92,15 +86,13 @@ function generatePicks() {
   return picks;
 }
 
-/* -------- API -------- */
+/* ---------------- API ---------------- */
 
 export async function GET() {
-  const picks = generatePicks();
-
   return NextResponse.json({
     generatedAt: new Date().toLocaleString("fr-FR", {
       timeZone: "Europe/Paris"
     }),
-    picks
+    picks: generatePronostics()
   });
 }
