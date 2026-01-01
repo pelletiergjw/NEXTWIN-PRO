@@ -3,8 +3,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisRequest, AnalysisResult, DailyPick } from '../types';
 
 /**
- * NEXTWIN ULTIMATE TRUTH ENGINE v12.0
- * PROTOCOLE ANTI-HALLUCINATION : RECHERCHE FORCÉE AVEC PREUVE URL
+ * NEXTWIN REALITY CHECK ENGINE v13.0
+ * PROTOCOLE ZÉRO TOLÉRANCE ANTI-HALLUCINATION
  */
 
 const API_KEY = process.env.API_KEY || "";
@@ -18,7 +18,7 @@ const getParisTime = () => {
     });
 };
 
-export const getDailyPicks = async (language: 'fr' | 'en'): Promise<any[]> => {
+export const getDailyPicks = async (language: 'fr' | 'en'): Promise<DailyPick[]> => {
     if (!API_KEY || API_KEY.length < 10) return [];
 
     const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -26,20 +26,21 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<any[]> => {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Passage au modèle Pro pour une meilleure gestion du search
-            contents: `Aujourd'hui nous sommes le ${todayStr}. 
-            
-            TACHE : Trouve 9 matchs RÉELS (3 Foot, 3 Basket, 3 Tennis) programmés pour AUJOURD'HUI ou DEMAIN.
-            
-            RÈGLES CRITIQUES :
-            1. Utilise Google Search pour vérifier les calendriers sur Flashscore, L'Équipe, ou ESPN.
-            2. Tu DOIS fournir pour chaque match une 'sourceUrl' réelle (ex: lien vers le match sur flashscore).
-            3. Si tu ne trouves pas de match réel pour un sport, laisse la liste vide pour ce sport. 
-            4. NE CITE PAS de matchs comme Bayern vs Dortmund ou Real vs Barca s'ils ne jouent pas aujourd'hui.
-            5. Vérifie les blessés réels (ex: Est-ce que Curry ou Mbappé jouent vraiment ce soir ?).`,
+            model: 'gemini-3-pro-preview',
+            contents: `Date du jour : ${todayStr} (Heure de Paris). Mission de VÉRIFICATION DE LA RÉALITÉ.
+
+            INSTRUCTIONS IMPÉRATIVES :
+            1. EXÉCUTE une recherche Google avec les termes EXACTS : "matchs de football aujourd'hui sur Flashscore".
+            2. EXÉCUTE une recherche Google avec les termes EXACTS : "NBA schedule today ESPN".
+            3. EXÉCUTE une recherche Google avec les termes EXACTS : "ATP Tour schedule today".
+            4. Pour 3 matchs de chaque sport (9 au total) qui ont lieu AUJOURD'HUI ou DEMAIN, extrais les informations.
+            5. Pour CHAQUE match, tu DOIS fournir une URL DIRECTE et VALIDE ('sourceUrl') vers la page du match (ex: https://www.flashscore.fr/match/...).
+            6. Si l'URL n'est pas trouvée ou si le match n'est pas confirmé pour aujourd'hui/demain, le match est REJETÉ. Ne l'inclus PAS.
+            7. INTERDICTION ABSOLUE d'inventer des matchs. Si le Bayern ne joue pas, il ne doit PAS apparaître.
+            8. Positionne le champ 'isVerified' à 'true' SEULEMENT si tu as suivi les étapes 1 à 6.`,
             config: {
                 tools: [{ googleSearch: {} }],
-                thinkingConfig: { thinkingBudget: 2000 }, // Force le raisonnement sur la date
+                thinkingConfig: { thinkingBudget: 2500 },
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
@@ -56,9 +57,10 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<any[]> => {
                                     analysis: { type: Type.STRING },
                                     matchDate: { type: Type.STRING },
                                     matchTime: { type: Type.STRING },
-                                    sourceUrl: { type: Type.STRING, description: "URL réelle du match vérifiée via Google" }
+                                    sourceUrl: { type: Type.STRING, description: "URL réelle du match vérifiée via Google" },
+                                    isVerified: { type: Type.BOOLEAN, description: "Doit être TRUE si le match a été trouvé via Google Search pour aujourd'hui ou demain." }
                                 },
-                                required: ['sport', 'match', 'betType', 'probability', 'analysis', 'matchDate', 'matchTime', 'sourceUrl']
+                                required: ['sport', 'match', 'betType', 'probability', 'analysis', 'matchDate', 'matchTime', 'sourceUrl', 'isVerified']
                             }
                         }
                     }
@@ -69,14 +71,15 @@ export const getDailyPicks = async (language: 'fr' | 'en'): Promise<any[]> => {
         const result = JSON.parse(response.text || "{}");
         
         if (result.picks) {
-            // Filtrage de sécurité : on ne garde que les matchs qui ont une URL source crédible
-            return result.picks.filter((p: any) => 
-                p.sourceUrl && (p.sourceUrl.includes('flashscore') || p.sourceUrl.includes('lequipe') || p.sourceUrl.includes('espn') || p.sourceUrl.includes('atptour'))
+            // DOUBLE FILTRAGE DE SÉCURITÉ : on ne garde que les matchs que l'IA a explicitement validés ET qui ont une URL crédible.
+            return result.picks.filter((p: DailyPick) => 
+                p.isVerified === true &&
+                p.sourceUrl && (p.sourceUrl.includes('flashscore') || p.sourceUrl.includes('lequipe') || p.sourceUrl.includes('espn') || p.sourceUrl.includes('atptour') || p.sourceUrl.includes('nba.com'))
             );
         }
         return [];
     } catch (error) {
-        console.error("Search Engine Error:", error);
+        console.error("Reality Check Engine Error:", error);
         return [];
     }
 };
@@ -90,9 +93,15 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
-            contents: `Analyse détaillée pour : ${request.match}. Pari : ${request.betType}.
-            Date actuelle : ${today}.
-            Effectue une recherche approfondie sur les compositions d'équipes et les blessés de DERNIÈRE MINUTE.`,
+            contents: `MISSION D'ANALYSE SÉCURISÉE pour le match : ${request.match}. Pari : ${request.betType}. Date du jour : ${today}.
+
+            ÉTAPE 1 (OBLIGATOIRE) : VÉRIFICATION D'EXISTENCE
+            - Utilise Google Search pour confirmer que ce match a bien lieu aujourd'hui ou dans les prochaines 48h.
+            - SI LE MATCH N'EST PAS TROUVÉ, arrête l'analyse et renvoie un message d'erreur clair dans 'detailedAnalysis'.
+
+            ÉTAPE 2 (SI LE MATCH EXISTE) : ANALYSE APPROFONDIE
+            - Recherche les compositions probables, les blessés de dernière minute et la dynamique des équipes.
+            - Fournis une analyse détaillée, probabilité, risque et ton avis.`,
             config: {
                 tools: [{ googleSearch: {} }],
                 thinkingConfig: { thinkingBudget: 1500 },
@@ -124,10 +133,10 @@ export const getBetAnalysis = async (request: AnalysisRequest, language: 'fr' | 
         return JSON.parse(response.text || "{}");
     } catch (error) {
         return {
-            detailedAnalysis: "Analyse impossible. Le match n'a pas pu être vérifié en temps réel.",
+            detailedAnalysis: "Analyse impossible. Le match n'a pas pu être vérifié en temps réel via Google Search.",
             successProbability: "0%",
             riskAssessment: "High",
-            aiOpinion: "Échec de la vérification Google Search.",
+            aiOpinion: "Échec de la vérification. L'analyse est annulée par mesure de sécurité.",
             sources: []
         };
     }
